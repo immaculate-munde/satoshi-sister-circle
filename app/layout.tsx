@@ -39,7 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} className={`${jakarta.variable} h-full antialiased`}>
       <body className="min-h-dvh">
         <AppProviders initialLocale={locale} mode={mode}>
-          <div className="safe-top mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-paper sm:shadow-[0_0_0_1px_#dfe8e3]">
+          <div className="safe-top flex min-h-dvh w-full flex-col">
             <ModeBanner />
             <OfflineBanner />
             {children}
