@@ -168,7 +168,12 @@ export function Screen({ children, className = "" }: { children: ReactNode; clas
 }
 
 export function StickyActions({ children }: { children: ReactNode }) {
-  return <div className="safe-bottom sticky bottom-0 mt-auto space-y-3 bg-gradient-to-t from-paper via-paper to-paper/0 px-5 pt-6">{children}</div>;
+  // --chrome-bottom is set by AppShell so CTAs clear the mobile bottom nav.
+  return (
+    <div className="safe-bottom sticky bottom-[var(--chrome-bottom,0px)] mt-auto space-y-3 bg-gradient-to-t from-paper via-paper to-paper/0 px-5 pt-6">
+      {children}
+    </div>
+  );
 }
 
 export function Loading({ label }: { label?: string }) {

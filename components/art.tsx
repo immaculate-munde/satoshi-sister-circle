@@ -70,3 +70,37 @@ export function CircleArt({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** Positivus-style hero illustration: circle + lightning, lime/black. */
+export function LandingHeroArt({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 420 360" className={className} aria-hidden="true">
+      <circle cx="210" cy="180" r="150" fill="#B9FF66" opacity="0.35" />
+      <circle cx="210" cy="180" r="118" fill="none" stroke="#191A23" strokeWidth="3" strokeDasharray="10 12" />
+      <circle cx="210" cy="180" r="78" fill="#fff" stroke="#191A23" strokeWidth="3" />
+      <circle cx="210" cy="180" r="52" fill="#B9FF66" stroke="#191A23" strokeWidth="3" />
+      <path d="M222 148 L192 186 H214 L198 214 L236 172 H212 Z" fill="#191A23" />
+      {/* orbiting members */}
+      <g>
+        <circle cx="98" cy="110" r="28" fill="#191A23" />
+        <circle cx="98" cy="102" r="10" fill="#B9FF66" />
+        <path d="M78 132 Q98 112 118 132" fill="#B9FF66" />
+      </g>
+      <g>
+        <circle cx="322" cy="118" r="28" fill="#fff" stroke="#191A23" strokeWidth="3" />
+        <circle cx="322" cy="110" r="10" fill="#191A23" />
+        <path d="M302 140 Q322 120 342 140" fill="#191A23" />
+      </g>
+      <g>
+        <circle cx="210" cy="300" r="28" fill="#191A23" />
+        <circle cx="210" cy="292" r="10" fill="#B9FF66" />
+        <path d="M190 322 Q210 302 230 322" fill="#B9FF66" />
+      </g>
+      {/* floating chips */}
+      <rect x="48" y="210" width="54" height="36" rx="12" fill="#fff" stroke="#191A23" strokeWidth="3" />
+      <path d="M66 228h18M75 219v18" stroke="#191A23" strokeWidth="3" strokeLinecap="round" />
+      <rect x="318" y="220" width="54" height="36" rx="12" fill="#B9FF66" stroke="#191A23" strokeWidth="3" />
+      <path d="M336 238h18" stroke="#191A23" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
