@@ -1,0 +1,48 @@
+{
+  "name": "chama-on-lightning",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -k -n web,worker -c green,yellow \"next dev\" \"npm:worker\"",
+    "dev:web": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "worker": "node --env-file-if-exists=.env.local --import tsx worker/index.ts",
+    "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/migrate.ts",
+    "db:seed": "node --env-file-if-exists=.env.local --import tsx scripts/seed.ts",
+    "reconcile": "node --env-file-if-exists=.env.local --import tsx scripts/reconcile.ts",
+    "flash:smoke": "node --env-file-if-exists=.env.local --import tsx scripts/flash-smoke.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint",
+    "test": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "graphql-ws": "6.4.1",
+    "next": "16.4.5",
+    "pdf-lib": "1.17.1",
+    "qrcode.react": "4.2.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "24.19.2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "concurrently": "10.0.6",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.5",
+    "tailwindcss": "^4",
+    "tsx": "4.23.15",
+    "typescript": "^5",
+    "vitest": "5.1.0"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "license": "MIT"
+}
