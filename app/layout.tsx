@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
 import { AppProviders, type Locale } from "@/components/providers";
-import { ModeBanner, OfflineBanner } from "@/components/ui";
+import { OfflineBanner } from "@/components/ui";
 import { ServiceWorker } from "@/components/service-worker";
 import { config } from "@/lib/config";
 import { getProvider } from "@/lib/payments";
@@ -40,7 +40,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-dvh">
         <AppProviders initialLocale={locale} mode={mode}>
           <div className="safe-top flex min-h-dvh w-full flex-col">
-            <ModeBanner />
             <OfflineBanner />
             {children}
           </div>

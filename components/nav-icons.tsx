@@ -36,3 +36,13 @@ export function IconAccount({ className = "" }: { className?: string }) {
     </svg>
   );
 }
+
+export function IconWallet({ className = "" }: { className?: string }) {
+  return (
+    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H19a1 1 0 0 1 1 1v2" />
+      <path d="M3 7.5V18a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2H5.5A2.5 2.5 0 0 1 3 7.5Z" />
+      <circle cx="17" cy="13" r="1.25" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
