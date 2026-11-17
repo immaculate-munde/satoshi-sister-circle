@@ -21,7 +21,7 @@ export function ReceiptTicket({ s, contentHash }: { s: ReceiptSnapshot; contentH
       <span aria-hidden className="absolute right-0 -bottom-[7px] left-0 h-[14px]" style={scallop("x")} />
 
       <p className="mx-auto w-fit rounded-full bg-btc px-3 py-1 text-[10px] font-extrabold tracking-wide text-forest">
-        {s.mode === "DEMO" ? "DEMO · SIMULATED, NO REAL FUNDS" : "FLASH TEST NETWORK · TEST FUNDS"}
+        {s.mode === "DEMO" ? "DEMO · SIMULATED, NO REAL FUNDS" : s.mode === "FLASH_LIVE" ? "LIVE PILOT · REAL FUNDS" : "FLASH TEST NETWORK · TEST FUNDS"}
       </p>
       <ReceiptArt className="mx-auto mt-3 w-[85%]" />
       <p className="mt-2 text-center text-[30px] font-extrabold italic">asante sana!</p>

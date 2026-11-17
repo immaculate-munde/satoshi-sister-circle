@@ -22,11 +22,12 @@ export default function CreateChamaPage() {
   const router = useRouter();
   const me = useApi<Me>("/api/me");
   const myName = me.data?.user?.displayName ?? "Amina Otieno";
-  const [name, setName] = useState("Umoja Women Chama");
+  const realMoney = mode.provider === "flash";
+  const [name, setName] = useState(realMoney ? "" : "Umoja Women Chama");
   const [amount, setAmount] = useState("5000");
   const [frequency, setFrequency] = useState<"WEEKLY" | "MONTHLY" | "CUSTOM">("WEEKLY");
   const [customDays, setCustomDays] = useState("14");
-  const [asset, setAsset] = useState<Asset>("BTC_SAT");
+  const [asset, setAsset] = useState<Asset>(mode.bitcoinEnabled ? "BTC_SAT" : "USD_CENT");
   const [firstDue, setFirstDue] = useState(defaultFirstDue);
   const [roster, setRoster] = useState<RosterMember[] | null>(null);
   const [rosterOpen, setRosterOpen] = useState(false);
@@ -43,19 +44,22 @@ export default function CreateChamaPage() {
   const mySeat = fixture.includes(myName) ? fixture.indexOf(myName) : 2;
   const members: RosterMember[] =
     roster ??
-    fixture.map((n, i) => ({
+    (realMoney
+      ? [myName, "", ""].map((n, i) => ({ key: String(i), displayName: n, isMe: i === 0, payoutPreference: "USD" as const, destinationRef: "" }))
+      : fixture.map((n, i) => ({
       key: String(i),
       displayName: i === mySeat ? myName : n,
       isMe: i === mySeat,
       payoutPreference: n === "Faith" ? "USD" : "BTC",
       destinationRef: "",
-    }));
+    })));
 
   const preview = useMemo(() => {
     if (!/^\d{1,7}$/.test(amount) || amount === "0") return null;
-    const rate = asset === "BTC_SAT" ? DEMO_RATES.KES_BTC_SAT : DEMO_RATES.KES_USD_CENT;
+    const rate = asset === "BTC_SAT" ? DEMO_RATES.KES_BTC_SAT : (me.data?.fxUsdCentsPerKes ?? (realMoney ? null : DEMO_RATES.KES_USD_CENT));
+    if (!rate) return null;
     return { per: fiatMinorToUnits(BigInt(amount) * 100n, rate), rate };
-  }, [amount, asset]);
+  }, [amount, asset, me.data?.fxUsdCentsPerKes, realMoney]);
 
   async function submit() {
     setBusy(true);
@@ -159,7 +163,7 @@ export default function CreateChamaPage() {
         <fieldset className="space-y-2">
           <legend className="text-sm font-semibold">{t("create.currency")}</legend>
           <div className="flex gap-2">
-            {assetBtn("BTC_SAT", t("create.bitcoin"), t("create.bitcoinHint"), "₿")}
+            {mode.bitcoinEnabled ? assetBtn("BTC_SAT", t("create.bitcoin"), t("create.bitcoinHint"), "₿") : null}
             {assetBtn("USD_CENT", t("create.usd"), t("create.usdHint"), "$")}
           </div>
         </fieldset>
@@ -194,7 +198,7 @@ export default function CreateChamaPage() {
         <InlineError message={error} />
       </Screen>
       <StickyActions>
-        <PillButton onClick={submit} busy={busy} disabled={!name.trim() || !preview || members.length < 3}>
+        <PillButton onClick={submit} busy={busy} disabled={!name.trim() || !preview || members.length < 3 || members.some((m) => !m.displayName.trim() || (realMoney && !m.destinationRef.trim()))}>
           {t("create.submit")}
         </PillButton>
         {mode.provider === "demo" ? <p className="text-center text-[11px] text-muted">Demo mode: each member gets a verified simulated wallet.</p> : null}

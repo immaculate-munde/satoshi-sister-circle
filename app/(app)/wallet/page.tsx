@@ -12,7 +12,7 @@ type Tab = "home" | "receive" | "history";
 
 /** Wallet hub — e-wallet pattern, Chama brand, wired to existing chama flows. */
 export default function WalletPage() {
-  const { t } = useApp();
+  const { t, mode } = useApp();
   const me = useApi<Me>("/api/me");
   const list = useApi<ChamaList>("/api/chamas");
   const [tab, setTab] = useState<Tab>("home");
@@ -171,7 +171,9 @@ export default function WalletPage() {
             <h2 className="mb-3 text-[17px] font-bold text-forest">{t("wallet.actions")}</h2>
             <ul className="grid grid-cols-4 gap-3">
               <GridTile href={payHref ?? "/home"} label={t("wallet.pay")} bg="bg-sage" color="text-money" onClick={payHref ? undefined : goPay} />
-              <GridTile href={firstActive ? `/chamas/${firstActive.id}/diaspora` : "/join"} label={t("wallet.diaspora")} bg="bg-warn-wash" color="text-[#8a4b00]" />
+              {mode.provider === "flash" ? null : (
+                <GridTile href={firstActive ? `/chamas/${firstActive.id}/diaspora` : "/join"} label={t("wallet.diaspora")} bg="bg-warn-wash" color="text-[#8a4b00]" />
+              )}
               <GridTile href="/chamas/new" label={t("wallet.create")} bg="bg-forest/10" color="text-forest" />
               <GridTile href="/home" label={t("wallet.moreHome")} bg="bg-btc/15" color="text-forest" />
             </ul>

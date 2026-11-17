@@ -1,3 +1,4 @@
+import { config } from "../config";
 import { many, one } from "../db";
 import { bps, convertFiatMinor, divRoundHalfUp, parseDecimal } from "../money";
 import { displayStatus, requireMember } from "./chamas";
@@ -33,7 +34,15 @@ export function feeComparison(gbpMinor: bigint) {
   };
 }
 
+/** The GBP leg uses a fixed illustrative rate and no on-ramp exists, so it must never run with real funds. */
+function assertDiasporaAvailable() {
+  if (config().mode === "flash") {
+    throw new DomainError("NOT_AVAILABLE", "Paying from abroad is not available in this version", 404);
+  }
+}
+
 export function getDiasporaContext(ctx: Ctx, groupId: string, userId: string) {
+  assertDiasporaAvailable();
   const { group } = requireMember(ctx.db, groupId, userId);
   const cycle = one<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE group_id = :g ORDER BY round_number DESC LIMIT 1", { g: groupId })!;
   const members = new Map(
@@ -71,6 +80,7 @@ export function getDiasporaContext(ctx: Ctx, groupId: string, userId: string) {
 }
 
 export async function createDiasporaInvoice(ctx: Ctx, input: { userId: string; groupId: string; memberId: string; payerName: string; payerCity: string }) {
+  assertDiasporaAvailable();
   const payerName = input.payerName.trim();
   const payerCity = input.payerCity.trim();
   if (payerName.length < 1 || payerName.length > 40) throw new DomainError("INVALID_PAYER", "Enter the payer's name");

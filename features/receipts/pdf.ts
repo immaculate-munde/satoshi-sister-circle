@@ -83,8 +83,7 @@ export async function renderReceiptPdf(s: ReceiptSnapshot, contentHash: string):
   const cream = hex(CREAM);
   const orange = hex(BTC_ORANGE);
   let y = H - 64;
-  // Every receipt in this build is test or simulated money, and says so.
-  const tag = s.mode === "DEMO" ? "DEMO - SIMULATED, NO REAL FUNDS" : "FLASH TEST NETWORK - TEST FUNDS";
+  const tag = s.mode === "DEMO" ? "DEMO - SIMULATED, NO REAL FUNDS" : s.mode === "FLASH_LIVE" ? "LIVE PILOT - REAL FUNDS" : "FLASH TEST NETWORK - TEST FUNDS";
   const tagW = bold.widthOfTextAtSize(tag, 8);
   page.drawRectangle({ x: (W - tagW) / 2 - 8, y: y - 4, width: tagW + 16, height: 16, color: orange });
   page.drawText(tag, { x: (W - tagW) / 2, y, size: 8, font: bold, color: hex(DEEP_FOREST) });
