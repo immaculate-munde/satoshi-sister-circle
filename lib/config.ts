@@ -23,6 +23,7 @@ const schema = z.object({
   FX_PROVIDER: z.enum(["demo", "live"]).default("demo"),
   RECONCILE_INTERVAL_SECONDS: z.coerce.number().int().min(5).max(600).default(30),
   ALLOW_SIMULATED_PAYMENTS: z.enum(["true", "false"]).default("false"),
+  FLASH_ALLOW_PRODUCTION: z.enum(["true", "false"]).default("false"),
   AUTH_PASSCODE: z.string().default(""),
 });
 
@@ -53,9 +54,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
 
   const flash = raw.PAYMENTS_PROVIDER === "flash";
   if (flash) {
-    for (const key of ["FLASH_API_KEY", "FLASH_BTC_WALLET_ID", "FLASH_USD_WALLET_ID", "FLASH_GRAPHQL_URL"] as const) {
+    for (const key of ["FLASH_API_KEY", "FLASH_USD_WALLET_ID", "FLASH_GRAPHQL_URL"] as const) {
       if (!raw[key] || PLACEHOLDER.test(raw[key])) problems.push(`${key} is required in flash mode`);
     }
+    if (raw.FX_PROVIDER !== "live") problems.push("FX_PROVIDER=live is required in flash mode (demo rates must never price real invoices)");
     if (raw.ALLOW_SIMULATED_PAYMENTS === "true") {
       problems.push("ALLOW_SIMULATED_PAYMENTS must be false when PAYMENTS_PROVIDER=flash (no silent simulation)");
     }
@@ -65,8 +67,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     if (raw.NEXT_PUBLIC_DEMO_MODE === "true") {
       problems.push("NEXT_PUBLIC_DEMO_MODE=true does not match PAYMENTS_PROVIDER=flash");
     }
-    if (/api\.flashapp\.me/.test(raw.FLASH_GRAPHQL_URL) && !/test/.test(raw.FLASH_GRAPHQL_URL)) {
-      problems.push("FLASH_GRAPHQL_URL points at production; this build only supports the Flash test environment");
+    if (/api\.flashapp\.me/.test(raw.FLASH_GRAPHQL_URL) && !/test/.test(raw.FLASH_GRAPHQL_URL) && raw.FLASH_ALLOW_PRODUCTION !== "true") {
+      problems.push("FLASH_GRAPHQL_URL points at production (real money). Set FLASH_ALLOW_PRODUCTION=true to confirm you intend that");
     }
   } else if (raw.NEXT_PUBLIC_DEMO_MODE === "false") {
     problems.push("NEXT_PUBLIC_DEMO_MODE=false does not match PAYMENTS_PROVIDER=demo");
@@ -85,6 +87,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
       usdWalletId: raw.FLASH_USD_WALLET_ID,
       network: raw.FLASH_NETWORK && !PLACEHOLDER.test(raw.FLASH_NETWORK) ? raw.FLASH_NETWORK : "unconfirmed",
     },
+    bitcoinEnabled: !flash || (!!raw.FLASH_BTC_WALLET_ID && !PLACEHOLDER.test(raw.FLASH_BTC_WALLET_ID)),
+    liveFunds: flash && !/test/.test(raw.FLASH_GRAPHQL_URL),
     maxFeeUnits: BigInt(raw.PAYMENT_MAX_FEE_UNITS),
     maxPrincipalUnits: BigInt(raw.PAYMENT_MAX_PRINCIPAL_UNITS),
     databasePath: raw.DATABASE_URL.replace(/^file:/, ""),

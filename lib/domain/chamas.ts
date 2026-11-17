@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { config } from "../config";
 import { type Db, id, many, one, run, tx } from "../db";
 import { type Asset, fiatMinorToUnits, sum } from "../money";
 import { DemoProvider } from "../payments/demo";
@@ -71,6 +72,9 @@ export function createInvite(ctx: Ctx, groupId: string, actorUserId: string, opt
 }
 
 export async function createChama(ctx: Ctx, userId: string, input: CreateChamaInput) {
+  if (input.settlementAsset === "BTC_SAT" && !config().bitcoinEnabled) {
+    throw new DomainError("ASSET_UNAVAILABLE", "Bitcoin chamas are not enabled yet. Choose USD-stable.", 400);
+  }
   const name = input.name.trim();
   if (name.length < 2 || name.length > 60) throw new DomainError("INVALID_NAME", "Name must be 2 to 60 characters");
   if (!/^\d{1,7}$/.test(input.contributionKes) || BigInt(input.contributionKes) <= 0n) {
