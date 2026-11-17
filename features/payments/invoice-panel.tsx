@@ -4,7 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/providers";
-import { InlineError, Notice, PillButton } from "@/components/ui";
+import { InlineError, PillButton } from "@/components/ui";
 import { ApiError, apiFetch, useApi, useOnline } from "@/lib/client/api";
 import { countdown, kes, units } from "@/lib/client/format";
 import type { Invoice } from "@/lib/client/types";
@@ -133,7 +133,15 @@ export function InvoicePanel({ initial, onRegenerate }: { initial: Invoice; onRe
             </>
           ) : null}
           {!isDemo ? (
-            <Notice>Paying from an in-app member wallet isn&apos;t available yet. Use any Lightning wallet: scan, open, or paste the invoice.</Notice>
+            <div className="rounded-2xl bg-sage p-4 text-left">
+              <p className="text-[13px] font-bold text-forest">{t("contribute.howTitle")}</p>
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-[13px] text-ink">
+                <li>{t("contribute.how1")}</li>
+                <li>{t("contribute.how2")}</li>
+                <li>{t("contribute.how3")}</li>
+              </ol>
+              <p className="mt-2 text-[12px] text-muted">{t("contribute.howNote")}</p>
+            </div>
           ) : null}
         </div>
       )}
