@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ButtonHTMLAttributes, type ReactNode, useEffect, useId, useRef } from "react";
@@ -55,21 +56,20 @@ export function Card({ children, className = "", as: As = "section" }: { childre
 
 const AVATAR_COLORS = ["#0F6B4C", "#FF9F1C", "#0A3D2E", "#F7931A", "#5C6B64", "#2E8B6A"];
 
+/** Profile pictures, picked per member by name. Add more files here to get more variety. */
+const AVATAR_IMAGES = ["/avatars/avatar-1.png"];
+
 export function MemberAvatar({ name, size = 40, ring }: { name: string; size?: number; ring?: boolean }) {
-  const initials = name
-    .split(/\s+/)
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-  const color = AVATAR_COLORS[[...name].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length];
+  const hash = [...name].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const color = AVATAR_COLORS[hash % AVATAR_COLORS.length];
+  const src = AVATAR_IMAGES[hash % AVATAR_IMAGES.length];
   return (
     <span
       aria-hidden
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white ${ring ? "ring-2 ring-white" : ""}`}
-      style={{ width: size, height: size, background: color, fontSize: size * 0.36 }}
+      className={`inline-flex shrink-0 overflow-hidden rounded-full bg-forest ${ring ? "ring-2 ring-white" : ""}`}
+      style={{ width: size, height: size }}
     >
-      {initials}
+      <Image src={src} alt="" width={size * 2} height={size * 2} className="h-full w-full rounded-full border-2 object-cover" style={{ borderColor: color }} />
     </span>
   );
 }
