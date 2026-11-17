@@ -3,7 +3,7 @@ import { type Db, id, many, one, run, tx } from "../db";
 import { type Asset, fiatMinorToUnits, sum } from "../money";
 import { DemoProvider } from "../payments/demo";
 import { type Ctx, DomainError, notFound } from "./context";
-import { createQuote, DEMO_RATES, getQuote, settlementPair } from "./fx";
+import { createQuote, getQuote, rateFor, settlementPair } from "./fx";
 import { appendEvent, sha256 } from "./ledger";
 import type { ContributionRow, CycleRow, DestinationSnapshot, GroupRow, MemberRow, PayoutRow } from "./rows";
 import { dueAtForRound, eatDateToDueInstant, type Frequency } from "./schedule";
@@ -103,7 +103,7 @@ export async function createChama(ctx: Ctx, userId: string, input: CreateChamaIn
   // Pre-check caps with a provisional quote so we fail before writing anything.
   const provisionalUnits = fiatMinorToUnits(
     contributionMinor,
-    pair === "KES/BTC_SAT" ? DEMO_RATES.KES_BTC_SAT : DEMO_RATES.KES_USD_CENT,
+    rateFor(pair, ctx.now().getTime()).rate,
   );
   const potUnits = provisionalUnits * BigInt(input.members.length);
   if (provisionalUnits <= 0n) throw new DomainError("INVALID_AMOUNT", "Contribution is too small to settle");

@@ -4,6 +4,8 @@ import { ZodError, type ZodType } from "zod";
 import { requireUser, type SessionUser } from "../auth/session";
 import { one, run } from "../db";
 import { DomainError } from "../domain/context";
+import { config } from "../config";
+import { ensureLiveRate } from "../domain/live-fx";
 import { serverCtx } from "../domain/server";
 import type { Ctx } from "../domain/context";
 
@@ -50,6 +52,7 @@ export function api<P = Record<string, string>>(handler: Handler<P>, opts: { mut
     try {
       if (opts.mutation) assertSameOrigin(req);
       const params = (await route?.params) ?? ({} as P);
+      if (config().fxProvider === "live") await ensureLiveRate();
       const res = await handler({ ctx: serverCtx(), requestId, req, params });
       res.headers.set("x-request-id", requestId);
       res.headers.set("cache-control", "no-store");

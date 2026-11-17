@@ -1,6 +1,9 @@
 import { type Db, id, one, run } from "../db";
 import type { Asset } from "../money";
 
+import { config } from "../config";
+import { DomainError } from "./context";
+import { LIVE_FX_SOURCE, liveUsdCentsPerKes } from "./live-fx";
 import { DEMO_FX_SOURCE, DEMO_RATES } from "./rates";
 
 export { DEMO_FX_SOURCE, DEMO_RATES };
@@ -17,19 +20,34 @@ export interface FxQuoteRow {
   rounding_rule: string;
 }
 
-export function createQuote(db: Db, now: Date, pair: "KES/BTC_SAT" | "KES/USD_CENT" | "GBP/KES", validSeconds: number): FxQuoteRow {
+type Pair = "KES/BTC_SAT" | "KES/USD_CENT" | "GBP/KES";
+
+/** Rate for a pair under the configured FX provider. Live mode supports KES/USD only; the rest refuse. */
+export function rateFor(pair: Pair, nowMs = Date.now()): { rate: string; source: string; mode: "LIVE" | "DEMO"; fetchedAt?: string } {
+  if (config().fxProvider === "live") {
+    if (pair !== "KES/USD_CENT") {
+      throw new DomainError("NOT_AVAILABLE", "This currency is not available yet", 400);
+    }
+    const live = liveUsdCentsPerKes(nowMs);
+    return { rate: live.rate, source: LIVE_FX_SOURCE, mode: "LIVE", fetchedAt: live.fetchedAt };
+  }
+  const rate = pair === "KES/BTC_SAT" ? DEMO_RATES.KES_BTC_SAT : pair === "KES/USD_CENT" ? DEMO_RATES.KES_USD_CENT : DEMO_RATES.GBP_KES;
+  return { rate, source: DEMO_FX_SOURCE, mode: "DEMO" };
+}
+
+export function createQuote(db: Db, now: Date, pair: Pair, validSeconds: number): FxQuoteRow {
   const [base, quote] = pair.split("/");
-  const rate =
-    pair === "KES/BTC_SAT" ? DEMO_RATES.KES_BTC_SAT : pair === "KES/USD_CENT" ? DEMO_RATES.KES_USD_CENT : DEMO_RATES.GBP_KES;
+  const r = rateFor(pair, now.getTime());
+  const rate = r.rate;
   const row: FxQuoteRow = {
     id: id(),
     base_currency: base,
     quote_currency: quote,
     rate_decimal: rate,
-    source: DEMO_FX_SOURCE,
-    fetched_at: now.toISOString(),
+    source: r.source,
+    fetched_at: r.fetchedAt ?? now.toISOString(),
     valid_until: new Date(now.getTime() + validSeconds * 1000).toISOString(),
-    mode: "DEMO",
+    mode: r.mode,
     rounding_rule: "HALF_UP_PER_OBLIGATION",
   };
   run(
