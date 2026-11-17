@@ -1,10 +1,10 @@
 /**
- * Flash spike / smoke test against the Flash TEST GraphQL API.
+ * Flash spike / smoke test against the configured Flash GraphQL API.
  *   npm run flash:smoke                      read-only: list wallets, create a 1-unit invoice per asset
  *   npm run flash:smoke -- --status <bolt11> check an invoice's status
  *   npm run flash:smoke -- --send-internal <walletId> --asset BTC_SAT --amount 10 --confirm
  *                                            send a tiny internal transfer (explicit --confirm required)
- * Never prints the API key. Refuses production endpoints.
+ * Never prints the API key. Production needs FLASH_ALLOW_PRODUCTION=true.
  */
 import { randomUUID } from "node:crypto";
 import { config } from "../lib/config";
@@ -32,9 +32,9 @@ async function main() {
   console.log(`Endpoint: ${cfg.flash.graphqlUrl}`);
 
   const wallets = await flash.listWallets();
-  console.log("Wallets:", wallets.map((w) => ({ id: `${w.id.slice(0, 6)}...`, currency: w.walletCurrency, balance: w.balance })));
+  console.log("Wallets:", wallets.map((w) => ({ id: w.id, currency: w.walletCurrency, balance: w.balance })));
   for (const [label, wid] of [
-    ["FLASH_BTC_WALLET_ID", cfg.flash.btcWalletId],
+    ...(cfg.bitcoinEnabled ? ([["FLASH_BTC_WALLET_ID", cfg.flash.btcWalletId]] as const) : []),
     ["FLASH_USD_WALLET_ID", cfg.flash.usdWalletId],
   ]) {
     console.log(`${label}: ${wallets.some((w) => w.id === wid) ? "found on this account" : "NOT FOUND on this account"}`);
@@ -69,6 +69,10 @@ async function main() {
   }
 
   for (const asset of ["BTC_SAT", "USD_CENT"] as const) {
+    if (asset === "BTC_SAT" && !cfg.bitcoinEnabled) {
+      console.log("BTC_SAT: skipped (no FLASH_BTC_WALLET_ID configured)");
+      continue;
+    }
     const inv = await flash.createInvoice({
       walletId: asset === "BTC_SAT" ? cfg.flash.btcWalletId : cfg.flash.usdWalletId,
       asset,
