@@ -8,7 +8,7 @@ something outside this repo.
 
 | Screen | Status | Notes |
 | --- | --- | --- |
-| 01 Splash | Implemented | Tap or 1.5 s, navigates once, reduced motion |
+| 01 Splash | Removed | `/` redirects straight to the landing page |
 | 02 Welcome | Implemented | Sign-in dialog, invite-code dialog |
 | 03 Home | Implemented | Totals come from settled records; BTC and USD totals shown separately |
 | 04 Create Chama | Implemented | Weekly/monthly/custom, BTC/USD-stable, roster editor (add, remove, rename, reorder, keyboard) |

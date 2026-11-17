@@ -74,7 +74,7 @@ export default function HomePage() {
           </div>
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid gap-3 lg:grid-cols-2">
           {list.data.chamas.map((c) => (
             <li key={c.id}>
               <ChamaCard c={c} />
