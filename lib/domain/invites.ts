@@ -23,6 +23,23 @@ function findInvite(ctx: Ctx, code: string): InviteRow {
   return inv;
 }
 
+/**
+ * Open seats this user may claim. A seat bound to a phone number can only be claimed by the verified owner of that
+ * number; unbound seats (demo data) stay open to any signed-in user.
+ */
+function claimableSeats(ctx: Ctx, groupId: string, userId: string, invitedMemberId: string | null): MemberRow[] {
+  const u = one<{ phone: string | null; phone_verified_at: string | null }>(ctx.db, "SELECT phone, phone_verified_at FROM users WHERE id = :u", { u: userId });
+  const verifiedPhone = u?.phone && u.phone_verified_at ? u.phone : null;
+  const open = many<MemberRow>(ctx.db, "SELECT * FROM members WHERE group_id = :g AND user_id IS NULL ORDER BY rotation_position", { g: groupId }).filter(
+    (m) => !invitedMemberId || m.id === invitedMemberId,
+  );
+  const mine = open.filter((m) => !m.phone || m.phone === verifiedPhone);
+  if (open.length && !mine.length) {
+    throw new DomainError("INVITE_NOT_FOR_YOU", "This invite is for a different phone number. Sign in with the number your organiser used.", 403);
+  }
+  return mine;
+}
+
 /** Shows only what a joiner needs: group name and open seats. */
 export function previewInvite(ctx: Ctx, code: string, userId: string) {
   const inv = findInvite(ctx, code);
@@ -31,11 +48,7 @@ export function previewInvite(ctx: Ctx, code: string, userId: string) {
     g: group.id,
     u: userId,
   });
-  const seats = many<MemberRow>(
-    ctx.db,
-    "SELECT * FROM members WHERE group_id = :g AND user_id IS NULL ORDER BY rotation_position",
-    { g: group.id },
-  ).filter((m) => !inv.invited_member_id || m.id === inv.invited_member_id);
+  const seats = already ? [] : claimableSeats(ctx, group.id, userId, inv.invited_member_id);
   return {
     groupId: group.id,
     groupName: group.name,
@@ -54,9 +67,7 @@ export function acceptInvite(ctx: Ctx, code: string, userId: string, memberId?: 
       u: userId,
     });
     if (existing) return { groupId: inv.group_id, memberId: existing.id, alreadyMember: true };
-    const seats = many<MemberRow>(ctx.db, "SELECT * FROM members WHERE group_id = :g AND user_id IS NULL", {
-      g: inv.group_id,
-    }).filter((m) => !inv.invited_member_id || m.id === inv.invited_member_id);
+    const seats = claimableSeats(ctx, inv.group_id, userId, inv.invited_member_id);
     if (!seats.length) throw new DomainError("NO_SEATS", "Every seat in this chama is already taken", 409);
     const seat = memberId ? seats.find((s) => s.id === memberId) : seats.length === 1 ? seats[0] : undefined;
     if (!seat) throw new DomainError("CHOOSE_SEAT", "Choose which member you are", 400);

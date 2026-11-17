@@ -1,4 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { api, parseBody, rateLimit } from "@/lib/api/http";
@@ -12,15 +11,9 @@ const body = z.union([
   z.object({ displayName: z.string().trim().min(1).max(40), passcode: z.string().max(200).optional() }),
 ]);
 
-function safeEqual(a: string, b: string) {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return ab.length === bb.length && timingSafeEqual(ab, bb);
-}
-
 /**
  * Demo mode: pick a seeded persona or create a demo user by name (no real money exists).
- * Flash test mode: name + shared deployment passcode. Phone OTP is on the roadmap.
+ * Real-money mode: disabled; use phone OTP.
  */
 export const POST = api(
   async ({ ctx, req }) => {
@@ -34,9 +27,8 @@ export const POST = api(
       if (!u) throw new DomainError("NOT_FOUND", "Persona not found", 404);
       userId = u.id;
     } else {
-      if (!cfg.demo && !safeEqual(input.passcode ?? "", cfg.authPasscode)) {
-        throw new DomainError("BAD_PASSCODE", "That passcode is not right", 401);
-      }
+      // With real funds the only way in is phone OTP (/api/auth/otp/*); this path would let anyone with the shared passcode mint accounts.
+      if (!cfg.demo) throw new DomainError("FORBIDDEN", "Sign in with your phone number", 403);
       userId = id();
       run(ctx.db, "INSERT INTO users (id, display_name, is_demo, created_at) VALUES (:id, :n, :d, :now)", {
         id: userId,

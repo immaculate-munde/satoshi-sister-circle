@@ -9,6 +9,7 @@ export interface RosterMember {
   isMe: boolean;
   payoutPreference: "BTC" | "USD";
   destinationRef: string;
+  phone?: string;
 }
 
 /** Add / remove / rename / reorder members. Order = payout rotation. Fully keyboard operable. */
@@ -77,6 +78,14 @@ export function RosterEditor({
                 </button>
               </div>
             </div>
+            {mode.provider === "flash" && !m.isMe ? (
+              <div className="mt-2 pl-8">
+                <label className="text-xs text-muted" htmlFor={`p-${m.key}`}>
+                  {t("roster.phone")}
+                </label>
+                <input id={`p-${m.key}`} type="tel" inputMode="tel" autoComplete="off" className={`${inputClass} min-h-11`} value={m.phone ?? ""} onChange={(e) => update(i, { phone: e.target.value })} placeholder="0712 345 678" />
+              </div>
+            ) : null}
             {mode.provider === "flash" ? (
               <div className="mt-2 pl-8">
                 <label className="text-xs text-muted" htmlFor={`d-${m.key}`}>

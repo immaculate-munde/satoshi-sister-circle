@@ -22,6 +22,7 @@ const createSchema = z.object({
         isMe: z.boolean(),
         payoutPreference: z.enum(["BTC", "USD"]),
         destinationRef: z.string().trim().max(60).optional(),
+        phone: z.string().trim().max(20).optional(),
       }),
     )
     .min(3)

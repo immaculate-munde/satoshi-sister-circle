@@ -27,6 +27,7 @@ export interface MemberRow {
   group_id: string;
   user_id: string | null;
   display_name: string;
+  phone: string | null;
   role: "OWNER" | "MEMBER";
   invite_state: "INVITED" | "JOINED";
   rotation_position: number;

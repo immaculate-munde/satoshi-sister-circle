@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { normalizePhone } from "../auth/phone";
 import { config } from "../config";
 import { type Db, id, many, one, run, tx } from "../db";
 import { type Asset, fiatMinorToUnits, sum } from "../money";
@@ -19,7 +20,7 @@ export interface CreateChamaInput {
   customIntervalDays?: number;
   settlementAsset: Asset;
   firstDueDate: string; // YYYY-MM-DD in EAT
-  members: { displayName: string; isMe: boolean; payoutPreference: "BTC" | "USD"; destinationRef?: string }[];
+  members: { displayName: string; isMe: boolean; payoutPreference: "BTC" | "USD"; destinationRef?: string; phone?: string }[];
 }
 
 /** Every read of group data goes through this. Non-members get 404 so ids cannot be probed. */
@@ -121,6 +122,24 @@ export async function createChama(ctx: Ctx, userId: string, input: CreateChamaIn
   const groupId = id();
   const now = ctx.now();
   const isDemo = ctx.provider instanceof DemoProvider;
+
+  // Real money: every seat is bound to a phone number so only that person can claim it. The creator's own number
+  // comes from their verified account.
+  const seatPhones: (string | null)[] = input.members.map(() => null);
+  if (!isDemo) {
+    const me = one<{ phone: string | null; phone_verified_at: string | null }>(ctx.db, "SELECT phone, phone_verified_at FROM users WHERE id = :u", { u: userId });
+    if (!me?.phone || !me.phone_verified_at) throw new DomainError("PHONE_REQUIRED", "Verify your phone number before creating a chama", 403);
+    input.members.forEach((m, i) => {
+      if (m.isMe) {
+        seatPhones[i] = me.phone;
+        return;
+      }
+      const p = normalizePhone(m.phone ?? "");
+      if (!p) throw new DomainError("INVALID_ROSTER", `${m.displayName}: enter a valid phone number`);
+      seatPhones[i] = p;
+    });
+    if (new Set(seatPhones).size !== seatPhones.length) throw new DomainError("INVALID_ROSTER", "Each member needs a different phone number");
+  }
   const memberIds = input.members.map(() => id());
 
   // Resolve destinations before opening the write transaction (provider calls are async).
@@ -179,14 +198,15 @@ export async function createChama(ctx: Ctx, userId: string, input: CreateChamaIn
       const d = destinations[i];
       run(
         ctx.db,
-        `INSERT INTO members (id, group_id, user_id, display_name, role, invite_state, rotation_position, payout_preference,
+        `INSERT INTO members (id, group_id, user_id, display_name, phone, role, invite_state, rotation_position, payout_preference,
            destination_type, verified_destination_ref, destination_label, destination_verified_at, created_at)
-         VALUES (:id, :g, :u, :name, :role, :state, :pos, :pref, :dtype, :dref, :dlabel, :dat, :now)`,
+         VALUES (:id, :g, :u, :name, :phone, :role, :state, :pos, :pref, :dtype, :dref, :dlabel, :dat, :now)`,
         {
           id: memberIds[i],
           g: groupId,
           u: m.isMe ? userId : null,
           name: m.displayName.trim(),
+          phone: seatPhones[i],
           role: m.isMe ? "OWNER" : "MEMBER",
           state: m.isMe ? "JOINED" : "INVITED",
           pos: i + 1,

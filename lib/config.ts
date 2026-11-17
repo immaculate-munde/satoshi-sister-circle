@@ -25,6 +25,10 @@ const schema = z.object({
   ALLOW_SIMULATED_PAYMENTS: z.enum(["true", "false"]).default("false"),
   FLASH_ALLOW_PRODUCTION: z.enum(["true", "false"]).default("false"),
   AUTH_PASSCODE: z.string().default(""),
+  SMS_PROVIDER: z.enum(["console", "africastalking"]).default("console"),
+  AT_USERNAME: z.string().default(""),
+  AT_API_KEY: z.string().default(""),
+  AT_SENDER_ID: z.string().default(""),
 });
 
 export type AppConfig = ReturnType<typeof loadConfig>;
@@ -74,8 +78,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     problems.push("NEXT_PUBLIC_DEMO_MODE=false does not match PAYMENTS_PROVIDER=demo");
   }
 
+  if (raw.SMS_PROVIDER === "africastalking" && (!raw.AT_USERNAME || !raw.AT_API_KEY || PLACEHOLDER.test(raw.AT_API_KEY))) {
+    problems.push("AT_USERNAME and AT_API_KEY are required when SMS_PROVIDER=africastalking");
+  }
+  if (flash && !/test/.test(raw.FLASH_GRAPHQL_URL) && raw.SMS_PROVIDER === "console") {
+    warnings.push("SMS_PROVIDER=console with live funds: sign-in codes are only printed to the server log, so users cannot receive them. Set SMS_PROVIDER=africastalking.");
+  }
+
   const cfg = {
     isProd,
+    sms: { provider: raw.SMS_PROVIDER, atUsername: raw.AT_USERNAME, atApiKey: raw.AT_API_KEY, atSenderId: raw.AT_SENDER_ID },
     mode: raw.PAYMENTS_PROVIDER,
     demo: !flash,
     allowSimulatedPayments: !flash && raw.ALLOW_SIMULATED_PAYMENTS === "true",
