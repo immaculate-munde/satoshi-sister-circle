@@ -20,7 +20,7 @@ const schema = z.object({
   SESSION_SECRET: z.string().default(""),
   INTERNAL_WORKER_SECRET: z.string().default(""),
   RECEIPT_SIGNING_SECRET: z.string().default(""),
-  FX_PROVIDER: z.enum(["demo"]).default("demo"),
+  FX_PROVIDER: z.enum(["demo", "live"]).default("demo"),
   RECONCILE_INTERVAL_SECONDS: z.coerce.number().int().min(5).max(600).default(30),
   ALLOW_SIMULATED_PAYMENTS: z.enum(["true", "false"]).default("false"),
   AUTH_PASSCODE: z.string().default(""),

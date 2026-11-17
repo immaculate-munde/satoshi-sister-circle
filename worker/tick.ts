@@ -1,4 +1,6 @@
+import { config } from "../lib/config";
 import { nowIso, run } from "../lib/db";
+import { ensureLiveRate } from "../lib/domain/live-fx";
 import type { Ctx } from "../lib/domain/context";
 import { invoicesToReconcile, markLateContributions, reconcileInvoice } from "../lib/domain/invoices";
 import { processPayouts, reconcileUnknownPayouts } from "../lib/domain/payouts";
@@ -13,6 +15,7 @@ export interface TickResult {
 
 /** One reconciliation + payout pass. Idempotent; safe to run from several workers. */
 export async function runTick(ctx: Ctx, workerId: string, opts: { reconcileInvoices?: boolean } = {}): Promise<TickResult> {
+  if (config().fxProvider === "live") await ensureLiveRate();
   let invoicesChecked = 0;
   let invoiceErrors = 0;
   if (opts.reconcileInvoices !== false) {
