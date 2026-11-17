@@ -80,6 +80,7 @@ export default function CreateChamaPage() {
             isMe: m.isMe,
             payoutPreference: m.payoutPreference,
             destinationRef: m.destinationRef || undefined,
+            phone: m.isMe ? undefined : m.phone || undefined,
           })),
         },
       });
@@ -198,7 +199,7 @@ export default function CreateChamaPage() {
         <InlineError message={error} />
       </Screen>
       <StickyActions>
-        <PillButton onClick={submit} busy={busy} disabled={!name.trim() || !preview || members.length < 3 || members.some((m) => !m.displayName.trim() || (realMoney && !m.destinationRef.trim()))}>
+        <PillButton onClick={submit} busy={busy} disabled={!name.trim() || !preview || members.length < 3 || members.some((m) => !m.displayName.trim() || (realMoney && (!m.destinationRef.trim() || (!m.isMe && !(m.phone ?? "").trim()))))}>
           {t("create.submit")}
         </PillButton>
         {mode.provider === "demo" ? <p className="text-center text-[11px] text-muted">Demo mode: each member gets a verified simulated wallet.</p> : null}
