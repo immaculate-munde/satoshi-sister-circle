@@ -34,7 +34,7 @@ books. The app still learns about payments only by asking the provider, exactly 
 
 ### Three-minute demo script
 
-1. Splash → Welcome → **Get started** as Amina.
+1. Welcome → **Get started** as Amina.
 2. **Create**: Umoja Women Chama, KES 5,000 weekly, Bitcoin, Wanjiku → Faith → Amina. The ledger shows the invite code.
    (Or use the seeded Umoja group.)
 3. As each member: **Contribute** → QR → **Simulate test-wallet payment**. The ledger ticks 0/3 → 1/3 → 2/3 → 3/3 live.

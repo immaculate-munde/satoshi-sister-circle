@@ -5,8 +5,6 @@ const shot = (name: string) => ({ path: `test-results/screens/${name}.png`, full
 
 test("final contribution triggers exactly one automatic payout and receipts", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("Save together. Paid out on time.")).toBeVisible();
-  await page.screenshot(shot("01-splash"));
   await page.waitForURL("**/welcome");
   await expect(page.getByRole("heading", { name: "Your chama, now on Lightning" })).toBeVisible();
   await page.screenshot(shot("02-welcome"));
