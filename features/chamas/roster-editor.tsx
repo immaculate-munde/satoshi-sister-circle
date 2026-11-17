@@ -93,7 +93,7 @@ export function RosterEditor({
           variant="secondary"
           disabled={roster.length >= 20}
           onClick={() =>
-            onChange([...roster, { key: crypto.randomUUID(), displayName: `Member ${roster.length + 1}`, isMe: false, payoutPreference: "BTC", destinationRef: "" }])
+            onChange([...roster, { key: crypto.randomUUID(), displayName: `Member ${roster.length + 1}`, isMe: false, payoutPreference: mode.bitcoinEnabled ? "BTC" : "USD", destinationRef: "" }])
           }
         >
           + {t("roster.add")}

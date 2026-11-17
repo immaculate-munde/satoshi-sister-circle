@@ -8,6 +8,8 @@ export type Locale = "en" | "sw";
 export interface AppMode {
   provider: "demo" | "flash";
   simulatedPayments: boolean;
+  live: boolean;
+  bitcoinEnabled: boolean;
   network: string;
 }
 

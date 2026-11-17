@@ -114,10 +114,10 @@ export function ModeBanner() {
     <div
       role="note"
       className={`no-print w-full px-4 py-1.5 text-center text-[11px] font-semibold tracking-wide ${
-        mode.provider === "demo" ? "bg-btc text-forest" : "bg-forest text-cream"
+        mode.provider === "demo" ? "bg-btc text-forest" : mode.live ? "bg-money text-white" : "bg-forest text-cream"
       }`}
     >
-      {mode.provider === "demo" ? t("mode.demo") : t("mode.flash")}
+      {mode.provider === "demo" ? t("mode.demo") : mode.live ? t("mode.live") : t("mode.flash")}
     </div>
   );
 }

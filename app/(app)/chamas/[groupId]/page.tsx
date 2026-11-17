@@ -12,7 +12,7 @@ import type { Ledger } from "@/lib/client/types";
 
 /** 05 Group Dashboard - Ledger (Figma 3:113). Live via SSE; badges follow canonical data. */
 export default function LedgerPage() {
-  const { t } = useApp();
+  const { t, mode } = useApp();
   const { groupId } = useParams<{ groupId: string }>();
   const online = useOnline();
   const ledger = useApi<Ledger>(`/api/chamas/${groupId}/ledger`);
@@ -167,9 +167,11 @@ export default function LedgerPage() {
           </section>
         ) : null}
 
-        <Link href={`/chamas/${groupId}/diaspora`} className="block rounded-[var(--radius-card)] border border-btc/40 bg-white p-4 text-sm font-semibold text-forest hover:bg-warn-wash">
-          🇬🇧 → 🇰🇪 {t("ledger.payFromAbroad")} →
-        </Link>
+        {mode.provider === "flash" ? null : (
+          <Link href={`/chamas/${groupId}/diaspora`} className="block rounded-[var(--radius-card)] border border-btc/40 bg-white p-4 text-sm font-semibold text-forest hover:bg-warn-wash">
+            🇬🇧 → 🇰🇪 {t("ledger.payFromAbroad")} →
+          </Link>
+        )}
 
         <details className="rounded-[var(--radius-card)] bg-white p-4 shadow-[var(--shadow-card)]">
           <summary className="min-h-11 cursor-pointer text-[15px] font-bold">{t("ledger.activity")}</summary>

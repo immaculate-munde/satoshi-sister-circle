@@ -126,7 +126,7 @@ export class FlashProvider implements PaymentsProvider {
   private readonly fetchImpl: typeof fetch;
 
   constructor(private readonly opts: FlashOptions) {
-    this.network = `Flash test (${opts.network})`;
+    this.network = /test/i.test(opts.graphqlUrl) ? `Flash test (${opts.network})` : `Flash live (${opts.network})`;
     this.fetchImpl = opts.fetchImpl ?? fetch;
   }
 

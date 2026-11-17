@@ -9,7 +9,7 @@ import {
   FeatureIconLightning,
   FeatureIconPayout,
 } from "@/components/landing-visuals";
-import { useT } from "@/components/providers";
+import { useApp } from "@/components/providers";
 import { SignInDialog } from "@/features/auth/signin-dialog";
 import { apiFetch } from "@/lib/client/api";
 import type { MessageKey } from "@/i18n/en";
@@ -29,7 +29,7 @@ const STEPS: { title: MessageKey; body: MessageKey; tone: "btc" | "money" | "for
 ];
 
 function Landing() {
-  const t = useT();
+  const { t, mode } = useApp();
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next");
@@ -161,7 +161,7 @@ function Landing() {
               <h2 className="mt-2 text-[1.85rem] font-extrabold tracking-tight text-forest sm:text-[2.4rem]">{t("landing.features.title")}</h2>
             </div>
             <ul className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {SERVICES.map((s) => (
+              {SERVICES.filter((s) => !(mode.provider === "flash" && s.title === "landing.feature.abroad.title")).map((s) => (
                 <li key={s.title} className="group rounded-[28px] bg-white p-6 text-center transition-shadow hover:shadow-[var(--shadow-card)]">
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">{s.icon}</div>
                   <h3 className="text-[17px] font-bold text-forest">{t(s.title)}</h3>

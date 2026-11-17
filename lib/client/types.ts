@@ -12,4 +12,6 @@ export type ReceiptView = ReturnType<typeof getReceipt>;
 export type DiasporaContext = ReturnType<typeof getDiasporaContext>;
 export interface Me {
   user: { id: string; displayName: string; locale: string; isDemo: boolean } | null;
+  /** Live KES->USD-cent rate when FX is live; null in demo. */
+  fxUsdCentsPerKes?: string | null;
 }

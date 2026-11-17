@@ -1,3 +1,4 @@
+import { config } from "../config";
 import { createHmac } from "node:crypto";
 import { type Db, id, one, run } from "../db";
 import type { Asset } from "../money";
@@ -30,7 +31,7 @@ export interface ReceiptSnapshot {
   };
   destinationLabel?: string;
   environment: string;
-  mode: "DEMO" | "FLASH_TEST";
+  mode: "DEMO" | "FLASH_TEST" | "FLASH_LIVE";
   providerProofRef: string;
   paymentHash?: string;
   settledAt: string;
@@ -127,7 +128,7 @@ export function createContributionReceipt(ctx: Ctx, invoice: InvoiceRow, settled
     },
     diaspora,
     environment: invoice.network,
-    mode: invoice.provider === "demo" ? "DEMO" : "FLASH_TEST",
+    mode: invoice.provider === "demo" ? "DEMO" : receiptFlashMode(),
     providerProofRef: proofRef,
     paymentHash: invoice.payment_hash ?? undefined,
     settledAt,
@@ -160,7 +161,7 @@ export function createPayoutReceipt(ctx: Ctx, payout: PayoutRow) {
     fx: { pair: `${q.base_currency}/${q.quote_currency}`, rate: q.rate_decimal, mode: q.mode, source: q.source, fetchedAt: q.fetched_at },
     destinationLabel: dest.label,
     environment: ctx.provider.network,
-    mode: ctx.provider.name === "demo" ? "DEMO" : "FLASH_TEST",
+    mode: ctx.provider.name === "demo" ? "DEMO" : receiptFlashMode(),
     providerProofRef: payout.provider_payment_id ?? "",
     settledAt: payout.sent_at ?? new Date().toISOString(),
     status: "PAID_OUT",
@@ -195,4 +196,8 @@ export function getReceipt(ctx: Ctx, receiptId: string, userId: string) {
     contentHash: r.content_hash,
     integrity: intact ? "VERIFIED" : "MISMATCH",
   };
+}
+
+function receiptFlashMode(): "FLASH_TEST" | "FLASH_LIVE" {
+  return config().liveFunds ? "FLASH_LIVE" : "FLASH_TEST";
 }

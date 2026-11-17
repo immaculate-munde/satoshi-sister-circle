@@ -10,7 +10,7 @@ import type { ChamaList, Me } from "@/lib/client/types";
 
 /** 03 Home - My Chamas (Figma 3:2). All figures derive from persisted records. */
 export default function HomePage() {
-  const { t } = useApp();
+  const { t, mode } = useApp();
   const me = useApi<Me>("/api/me");
   const list = useApi<ChamaList>("/api/chamas");
 
@@ -20,7 +20,7 @@ export default function HomePage() {
   const name = me.data.user.displayName;
   const active = list.data.chamas.filter((c) => c.status === "ACTIVE");
   const totals = list.data.totals;
-  const diasporaTarget = active[0]?.id;
+  const diasporaTarget = mode.provider === "flash" ? undefined : active[0]?.id;
 
   const totalCard = (
     <div className="rounded-[var(--radius-card)] bg-forest p-5 text-white shadow-[var(--shadow-card)]">
@@ -30,7 +30,7 @@ export default function HomePage() {
         {units(totals.btcSats, "BTC_SAT")}
         {totals.usdCents !== "0" ? ` · ${units(totals.usdCents, "USD_CENT")}` : ""}
       </p>
-      <p className="mt-3 text-[12px] text-btc">{t("home.totalSavedHint")} →</p>
+      <p className="mt-3 text-[12px] text-btc">{t("home.totalSavedHint")}{diasporaTarget ? " →" : ""}</p>
     </div>
   );
 
