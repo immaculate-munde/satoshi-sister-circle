@@ -1,4 +1,4 @@
-import { id, nowIso, openDb, run } from "@/lib/db";
+import { id, many, nowIso, one, openDb, run } from "@/lib/db";
 import { createChama } from "@/lib/domain/chamas";
 import type { Ctx } from "@/lib/domain/context";
 import { acceptInvite } from "@/lib/domain/invites";
@@ -13,8 +13,8 @@ export class Clock {
   }
 }
 
-export function makeCtx() {
-  const db = openDb(":memory:");
+export async function makeCtx() {
+  const db = await openDb("memory:");
   const clock = new Clock();
   const provider = new DemoProvider(db, clock.now);
   const ctx: Ctx = {
@@ -27,17 +27,17 @@ export function makeCtx() {
   return { ctx, db, clock, provider };
 }
 
-export function user(ctx: Ctx, name: string) {
+export async function user(ctx: Ctx, name: string) {
   const uid = id();
-  run(ctx.db, "INSERT INTO users (id, display_name, created_at) VALUES (:id, :n, :now)", { id: uid, n: name, now: nowIso() });
+  await run(ctx.db, "INSERT INTO users (id, display_name, created_at) VALUES (:id, :n, :now)", { id: uid, n: name, now: nowIso() });
   return uid;
 }
 
 /** Umoja fixture: Wanjiku -> Faith -> Amina, KES 5,000 weekly, BTC. All seats bound. */
 export async function umoja(ctx: Ctx, asset: "BTC_SAT" | "USD_CENT" = "BTC_SAT") {
-  const amina = user(ctx, "Amina Otieno");
-  const wanjiku = user(ctx, "Wanjiku");
-  const faith = user(ctx, "Faith");
+  const amina = await user(ctx, "Amina Otieno");
+  const wanjiku = await user(ctx, "Wanjiku");
+  const faith = await user(ctx, "Faith");
   const { group, invite } = await createChama(ctx, amina, {
     name: "Umoja Women Chama",
     contributionKes: "5000",
@@ -50,20 +50,20 @@ export async function umoja(ctx: Ctx, asset: "BTC_SAT" | "USD_CENT" = "BTC_SAT")
       { displayName: "Amina Otieno", isMe: true, payoutPreference: "BTC" },
     ],
   });
-  const seats = ctx.db.prepare("SELECT id, display_name FROM members WHERE group_id = ?").all(group.id) as { id: string; display_name: string }[];
-  acceptInvite(ctx, invite.code, wanjiku, seats.find((s) => s.display_name === "Wanjiku")!.id);
-  acceptInvite(ctx, invite.code, faith, seats.find((s) => s.display_name === "Faith")!.id);
+  const seats = await many<{ id: string; display_name: string }>(ctx.db, "SELECT id, display_name FROM members WHERE group_id = :g", { g: group.id });
+  await acceptInvite(ctx, invite.code, wanjiku, seats.find((s) => s.display_name === "Wanjiku")!.id);
+  await acceptInvite(ctx, invite.code, faith, seats.find((s) => s.display_name === "Faith")!.id);
   return { group, invite, users: { amina, wanjiku, faith } };
 }
 
 export async function payAs(ctx: Ctx, provider: DemoProvider, userId: string, groupId: string, opts: { reconcile?: boolean } = {}) {
   const inv = await requestInvoice(ctx, { userId, groupId, kind: "CONTRIBUTION" });
   const wallet = `user:${userId}:${inv.asset}`;
-  provider.ensureWallet(wallet, "payer", inv.asset, 1_000_000n);
-  provider.simulatePayment(inv.paymentHash!, wallet);
+  await provider.ensureWallet(wallet, "payer", inv.asset, 1_000_000n);
+  await provider.simulatePayment(inv.paymentHash!, wallet);
   if (opts.reconcile !== false) await reconcileInvoice(ctx, inv.id);
   return inv;
 }
 
-export const count = (ctx: Ctx, sql: string, ...params: (string | number)[]) =>
-  Number((ctx.db.prepare(sql).get(...params) as { n: number }).n);
+export const count = async (ctx: Ctx, sql: string, params: Record<string, string | number> = {}) =>
+  Number(((await one<{ n: number }>(ctx.db, sql, params)) as { n: number }).n);
