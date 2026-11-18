@@ -26,7 +26,10 @@ export default function CreateChamaPage() {
   const [amount, setAmount] = useState("5000");
   const [frequency, setFrequency] = useState<"WEEKLY" | "MONTHLY" | "CUSTOM">("WEEKLY");
   const [customDays, setCustomDays] = useState("14");
-  const [asset, setAsset] = useState<Asset>("BTC_SAT");
+  const health = useApi<{ btcEnabled?: boolean }>("/api/health");
+  const btcEnabled = health.data?.btcEnabled !== false;
+  const [chosenAsset, setAsset] = useState<Asset>("BTC_SAT");
+  const asset: Asset = btcEnabled ? chosenAsset : "USD_CENT";
   const [firstDue, setFirstDue] = useState(defaultFirstDue);
   const [roster, setRoster] = useState<RosterMember[] | null>(null);
   const [rosterOpen, setRosterOpen] = useState(false);
@@ -104,8 +107,9 @@ export default function CreateChamaPage() {
     <button
       type="button"
       onClick={() => setAsset(a)}
+      disabled={a === "BTC_SAT" && !btcEnabled}
       aria-pressed={asset === a}
-      className={`flex min-h-16 flex-1 items-center gap-2 rounded-2xl border p-3 text-left ${asset === a ? "border-money bg-sage" : "border-line bg-white"}`}
+      className={`flex min-h-16 flex-1 disabled:opacity-40 items-center gap-2 rounded-2xl border p-3 text-left ${asset === a ? "border-money bg-sage" : "border-line bg-white"}`}
     >
       <span className={`flex h-9 w-9 items-center justify-center rounded-full text-white ${a === "BTC_SAT" ? "bg-btc" : "bg-money"}`} aria-hidden>
         {icon}

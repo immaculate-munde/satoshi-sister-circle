@@ -11,7 +11,7 @@ export const POST = api(
       req,
       z.object({ code: z.string().trim().min(4).max(40), memberId: z.string().uuid().optional() }),
     );
-    return NextResponse.json(acceptInvite(ctx, code, user.id, memberId));
+    return NextResponse.json(await acceptInvite(ctx, code, user.id, memberId));
   },
   { mutation: true },
 );

@@ -3,7 +3,9 @@ import { type Db, id, many, one, run, tx } from "../db";
 import { type Asset, fiatMinorToUnits, sum } from "../money";
 import { DemoProvider } from "../payments/demo";
 import { type Ctx, DomainError, notFound } from "./context";
+import { config } from "../config";
 import { createQuote, DEMO_RATES, getQuote, settlementPair } from "./fx";
+import { ensureFreshRates, readCachedRate } from "./live-rates";
 import { appendEvent, sha256 } from "./ledger";
 import type { ContributionRow, CycleRow, DestinationSnapshot, GroupRow, MemberRow, PayoutRow } from "./rows";
 import { dueAtForRound, eatDateToDueInstant, type Frequency } from "./schedule";
@@ -22,17 +24,17 @@ export interface CreateChamaInput {
 }
 
 /** Every read of group data goes through this. Non-members get 404 so ids cannot be probed. */
-export function requireMember(db: Db, groupId: string, userId: string): { group: GroupRow; member: MemberRow } {
-  const group = one<GroupRow>(db, "SELECT * FROM groups WHERE id = :id", { id: groupId });
+export async function requireMember(db: Db, groupId: string, userId: string): Promise<{ group: GroupRow; member: MemberRow }> {
+  const group = await one<GroupRow>(db, "SELECT * FROM groups WHERE id = :id", { id: groupId });
   const member = group
-    ? one<MemberRow>(db, "SELECT * FROM members WHERE group_id = :g AND user_id = :u", { g: groupId, u: userId })
+    ? await one<MemberRow>(db, "SELECT * FROM members WHERE group_id = :g AND user_id = :u", { g: groupId, u: userId })
     : undefined;
   if (!group || !member) throw notFound("Chama not found");
   return { group, member };
 }
 
-export function currentCycle(db: Db, groupId: string): CycleRow | undefined {
-  return one<CycleRow>(db, "SELECT * FROM cycles WHERE group_id = :g ORDER BY round_number DESC LIMIT 1", { g: groupId });
+export async function currentCycle(db: Db, groupId: string): Promise<CycleRow | undefined> {
+  return await one<CycleRow>(db, "SELECT * FROM cycles WHERE group_id = :g ORDER BY round_number DESC LIMIT 1", { g: groupId });
 }
 
 function normalizeCode(code: string) {
@@ -45,13 +47,13 @@ export function hashInviteCode(code: string) {
 
 const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-export function createInvite(ctx: Ctx, groupId: string, actorUserId: string, opts: { maxUses?: number; ttlDays?: number } = {}) {
+export async function createInvite(ctx: Ctx, groupId: string, actorUserId: string, opts: { maxUses?: number; ttlDays?: number } = {}) {
   const bytes = randomBytes(10);
   const raw = Array.from(bytes, (b) => CROCKFORD[b % 32]).join("");
   const code = `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 10)}`;
   const now = ctx.now();
-  tx(ctx.db, () => {
-    run(
+  await tx(ctx.db, async () => {
+    await run(
       ctx.db,
       `INSERT INTO invites (id, group_id, token_hash, code_hint, expires_at, max_uses, created_at)
        VALUES (:id, :g, :h, :hint, :exp, :max, :now)`,
@@ -65,12 +67,16 @@ export function createInvite(ctx: Ctx, groupId: string, actorUserId: string, opt
         now: now.toISOString(),
       },
     );
-    appendEvent(ctx.db, { groupId, type: "INVITE_CREATED", payload: { hint: raw.slice(-4) }, actor: `user:${actorUserId}`, at: now });
+    await appendEvent(ctx.db, { groupId, type: "INVITE_CREATED", payload: { hint: raw.slice(-4) }, actor: `user:${actorUserId}`, at: now });
   });
   return { code, expiresAt: new Date(now.getTime() + (opts.ttlDays ?? 14) * 86400_000).toISOString() };
 }
 
 export async function createChama(ctx: Ctx, userId: string, input: CreateChamaInput) {
+  if (config().fxProvider === "live") await ensureFreshRates(ctx.db, ctx.now());
+  if (input.settlementAsset === "BTC_SAT" && !config().flash.btcEnabled) {
+    throw new DomainError("ASSET_UNAVAILABLE", "Bitcoin chamas are not available: this deployment has no Flash BTC wallet. Choose USD-stable.");
+  }
   const name = input.name.trim();
   if (name.length < 2 || name.length > 60) throw new DomainError("INVALID_NAME", "Name must be 2 to 60 characters");
   if (!/^\d{1,7}$/.test(input.contributionKes) || BigInt(input.contributionKes) <= 0n) {
@@ -103,7 +109,8 @@ export async function createChama(ctx: Ctx, userId: string, input: CreateChamaIn
   // Pre-check caps with a provisional quote so we fail before writing anything.
   const provisionalUnits = fiatMinorToUnits(
     contributionMinor,
-    pair === "KES/BTC_SAT" ? DEMO_RATES.KES_BTC_SAT : DEMO_RATES.KES_USD_CENT,
+    (config().fxProvider === "live" ? (await readCachedRate(ctx.db, pair, ctx.now()))?.rate_decimal : undefined) ??
+      (pair === "KES/BTC_SAT" ? DEMO_RATES.KES_BTC_SAT : DEMO_RATES.KES_USD_CENT),
   );
   const potUnits = provisionalUnits * BigInt(input.members.length);
   if (provisionalUnits <= 0n) throw new DomainError("INVALID_AMOUNT", "Contribution is too small to settle");
@@ -124,7 +131,7 @@ export async function createChama(ctx: Ctx, userId: string, input: CreateChamaIn
     input.members.map(async (m, i) => {
       if (isDemo) {
         const walletId = `member:${memberIds[i]}:${input.settlementAsset}`;
-        (ctx.provider as DemoProvider).ensureWallet(walletId, m.displayName.trim(), input.settlementAsset);
+        await (ctx.provider as DemoProvider).ensureWallet(walletId, m.displayName.trim(), input.settlementAsset);
         return { walletId, label: `${m.displayName.trim()} test wallet (demo)`, type: "DEMO_WALLET", verifiedAt: now.toISOString() };
       }
       if (!m.destinationRef) return null;
@@ -142,16 +149,16 @@ export async function createChama(ctx: Ctx, userId: string, input: CreateChamaIn
 
   const providerAccountRef = isDemo ? `grp:${groupId}` : "flash:operator-default";
   if (isDemo) {
-    (ctx.provider as DemoProvider).ensureWallet(
+    await (ctx.provider as DemoProvider).ensureWallet(
       ctx.provider.collectionWalletId(providerAccountRef, input.settlementAsset),
       `${name} pot`,
       input.settlementAsset,
     );
   }
 
-  const result = tx(ctx.db, () => {
-    const number = (one<{ n: number }>(ctx.db, "SELECT COALESCE(MAX(number), 0) + 1 AS n FROM groups")?.n ?? 1) as number;
-    run(
+  const result = await tx(ctx.db, async () => {
+    const number = (await (await one<{ n: number }>(ctx.db, "SELECT COALESCE(MAX(number), 0) + 1 AS n FROM groups"))?.n ?? 1) as number;
+    await run(
       ctx.db,
       `INSERT INTO groups (id, number, name, owner_user_id, contribution_kes_minor, settlement_asset, frequency,
          custom_interval_days, first_due_at, provider, provider_account_ref, created_at)
@@ -171,9 +178,9 @@ export async function createChama(ctx: Ctx, userId: string, input: CreateChamaIn
         now: now.toISOString(),
       },
     );
-    input.members.forEach((m, i) => {
+    for (const [i, m] of input.members.entries()) {
       const d = destinations[i];
-      run(
+      await run(
         ctx.db,
         `INSERT INTO members (id, group_id, user_id, display_name, role, invite_state, rotation_position, payout_preference,
            destination_type, verified_destination_ref, destination_label, destination_verified_at, created_at)
@@ -194,8 +201,8 @@ export async function createChama(ctx: Ctx, userId: string, input: CreateChamaIn
           now: now.toISOString(),
         },
       );
-    });
-    appendEvent(ctx.db, {
+    }
+    await appendEvent(ctx.db, {
       groupId,
       type: "GROUP_CREATED",
       payload: {
@@ -209,17 +216,17 @@ export async function createChama(ctx: Ctx, userId: string, input: CreateChamaIn
       actor: `user:${userId}`,
       at: now,
     });
-    const group = one<GroupRow>(ctx.db, "SELECT * FROM groups WHERE id = :id", { id: groupId })!;
-    openCycle(ctx, group, 1, now, `user:${userId}`);
+    const group = await (await one<GroupRow>(ctx.db, "SELECT * FROM groups WHERE id = :id", { id: groupId }))!;
+    await openCycle(ctx, group, 1, now, `user:${userId}`);
     return group;
   });
-  const invite = createInvite(ctx, groupId, userId);
+  const invite = await createInvite(ctx, groupId, userId);
   return { group: result, invite };
 }
 
-/** Open round `round`: freeze roster, recipient, asset, quote and obligations. Call inside tx(). */
-export function openCycle(ctx: Ctx, group: GroupRow, round: number, at: Date, actor: string): CycleRow {
-  const members = many<MemberRow>(ctx.db, "SELECT * FROM members WHERE group_id = :g ORDER BY rotation_position", {
+/** Open round `round`: freeze roster, recipient, asset, quote and obligations. Call inside await tx(). */
+export async function openCycle(ctx: Ctx, group: GroupRow, round: number, at: Date, actor: string): Promise<CycleRow> {
+  const members = await many<MemberRow>(ctx.db, "SELECT * FROM members WHERE group_id = :g ORDER BY rotation_position", {
     g: group.id,
   });
   const recipient = members[(round - 1) % members.length];
@@ -233,11 +240,11 @@ export function openCycle(ctx: Ctx, group: GroupRow, round: number, at: Date, ac
     verifiedAt: recipient.destination_verified_at,
   };
   const due = dueAtForRound(group.first_due_at, group.frequency, round, group.custom_interval_days);
-  const quote = createQuote(ctx.db, at, settlementPair(group.settlement_asset), Math.max(86400, (due.getTime() - at.getTime()) / 1000 + 7 * 86400));
+  const quote = await createQuote(ctx.db, at, settlementPair(group.settlement_asset), Math.max(86400, (due.getTime() - at.getTime()) / 1000 + 7 * 86400));
   const per = members.map(() => fiatMinorToUnits(BigInt(group.contribution_kes_minor), quote.rate_decimal));
   const target = sum(per);
   const cycleId = id();
-  run(
+  await run(
     ctx.db,
     `INSERT INTO cycles (id, group_id, round_number, roster_snapshot, recipient_member_id, recipient_destination_snapshot,
        settlement_asset, target_settlement_units, display_target_kes_minor, quote_id, opens_at, due_at, status)
@@ -257,15 +264,15 @@ export function openCycle(ctx: Ctx, group: GroupRow, round: number, at: Date, ac
       due: due.toISOString(),
     },
   );
-  members.forEach((m, i) => {
-    run(
+  for (const [i, m] of members.entries()) {
+    await run(
       ctx.db,
       `INSERT INTO contributions (id, cycle_id, member_id, due_kes_minor, due_settlement_units, status)
        VALUES (:id, :c, :m, :kes, :units, 'PENDING')`,
       { id: id(), c: cycleId, m: m.id, kes: group.contribution_kes_minor, units: Number(per[i]) },
     );
-  });
-  appendEvent(ctx.db, {
+  }
+  await appendEvent(ctx.db, {
     groupId: group.id,
     cycleId,
     type: "CYCLE_OPENED",
@@ -280,7 +287,7 @@ export function openCycle(ctx: Ctx, group: GroupRow, round: number, at: Date, ac
     actor,
     at,
   });
-  return one<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE id = :id", { id: cycleId })!;
+  return await (await one<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE id = :id", { id: cycleId }))!;
 }
 
 export function displayStatus(c: ContributionRow, cycle: CycleRow, now: Date): "PAID" | "PENDING" | "LATE" {
@@ -289,21 +296,21 @@ export function displayStatus(c: ContributionRow, cycle: CycleRow, now: Date): "
   return "PENDING";
 }
 
-export function listChamas(ctx: Ctx, userId: string) {
-  const groups = many<GroupRow & { my_member_id: string }>(
+export async function listChamas(ctx: Ctx, userId: string) {
+  const groups = await many<GroupRow & { my_member_id: string }>(
     ctx.db,
     `SELECT g.*, m.id AS my_member_id FROM groups g JOIN members m ON m.group_id = g.id AND m.user_id = :u
      ORDER BY g.created_at DESC`,
     { u: userId },
   );
   const now = ctx.now();
-  const items = groups.map((g) => {
-    const cycle = currentCycle(ctx.db, g.id)!;
-    const contribs = many<ContributionRow>(ctx.db, "SELECT * FROM contributions WHERE cycle_id = :c", { c: cycle.id });
-    const memberCount = (one<{ n: number }>(ctx.db, "SELECT COUNT(*) AS n FROM members WHERE group_id = :g", { g: g.id })?.n ??
+  const items = await Promise.all(groups.map(async (g) => {
+    const cycle = (await currentCycle(ctx.db, g.id))!;
+    const contribs = await many<ContributionRow>(ctx.db, "SELECT * FROM contributions WHERE cycle_id = :c", { c: cycle.id });
+    const memberCount = (await (await one<{ n: number }>(ctx.db, "SELECT COUNT(*) AS n FROM members WHERE group_id = :g", { g: g.id }))?.n ??
       0) as number;
     const mine = contribs.find((c) => c.member_id === g.my_member_id);
-    const recipient = one<{ display_name: string }>(ctx.db, "SELECT display_name FROM members WHERE id = :id", {
+    const recipient = await one<{ display_name: string }>(ctx.db, "SELECT display_name FROM members WHERE id = :id", {
       id: cycle.recipient_member_id,
     });
     return {
@@ -322,9 +329,9 @@ export function listChamas(ctx: Ctx, userId: string) {
       recipientName: recipient?.display_name ?? "",
       dueAt: cycle.due_at,
     };
-  });
+  }));
   // Lifetime totals from persisted settled contributions only. Assets are never added together.
-  const paid = many<{ due_kes_minor: number; settled_settlement_units: number; settlement_asset: Asset }>(
+  const paid = await many<{ due_kes_minor: number; settled_settlement_units: number; settlement_asset: Asset }>(
     ctx.db,
     `SELECT c.due_kes_minor, c.settled_settlement_units, cy.settlement_asset
        FROM contributions c JOIN cycles cy ON cy.id = c.cycle_id JOIN members m ON m.id = c.member_id
@@ -348,29 +355,29 @@ export function listChamas(ctx: Ctx, userId: string) {
   };
 }
 
-export function getLedger(ctx: Ctx, groupId: string, userId: string) {
-  const { group, member } = requireMember(ctx.db, groupId, userId);
+export async function getLedger(ctx: Ctx, groupId: string, userId: string) {
+  const { group, member } = await requireMember(ctx.db, groupId, userId);
   const now = ctx.now();
-  const members = many<MemberRow>(ctx.db, "SELECT * FROM members WHERE group_id = :g ORDER BY rotation_position", {
+  const members = await many<MemberRow>(ctx.db, "SELECT * FROM members WHERE group_id = :g ORDER BY rotation_position", {
     g: groupId,
   });
   const byId = new Map(members.map((m) => [m.id, m]));
-  const cycles = many<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE group_id = :g ORDER BY round_number", { g: groupId });
+  const cycles = await many<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE group_id = :g ORDER BY round_number", { g: groupId });
   const cycle = cycles[cycles.length - 1];
-  const contribs = many<ContributionRow>(ctx.db, "SELECT * FROM contributions WHERE cycle_id = :c", { c: cycle.id });
-  const receipts = many<{ id: string; contribution_id: string }>(
+  const contribs = await many<ContributionRow>(ctx.db, "SELECT * FROM contributions WHERE cycle_id = :c", { c: cycle.id });
+  const receipts = await many<{ id: string; contribution_id: string }>(
     ctx.db,
     "SELECT id, contribution_id FROM receipts WHERE contribution_id IN (SELECT id FROM contributions WHERE cycle_id = :c)",
     { c: cycle.id },
   );
   const receiptByContribution = new Map(receipts.map((r) => [r.contribution_id, r.id]));
-  const payouts = many<PayoutRow>(
+  const payouts = await many<PayoutRow>(
     ctx.db,
     "SELECT * FROM payouts WHERE cycle_id IN (SELECT id FROM cycles WHERE group_id = :g)",
     { g: groupId },
   );
   const payoutByCycle = new Map(payouts.map((p) => [p.cycle_id, p]));
-  const quote = getQuote(ctx.db, cycle.quote_id);
+  const quote = await getQuote(ctx.db, cycle.quote_id);
   const paid = contribs.filter((c) => c.status === "PAID");
   const contributions = contribs
     .map((c) => {
@@ -410,7 +417,7 @@ export function getLedger(ctx: Ctx, groupId: string, userId: string) {
     };
   });
   const currentPayout = payoutByCycle.get(cycle.id);
-  const events = many<{ sequence: number; type: string; canonical_payload: string; occurred_at: string; event_hash: string }>(
+  const events = await many<{ sequence: number; type: string; canonical_payload: string; occurred_at: string; event_hash: string }>(
     ctx.db,
     "SELECT sequence, type, canonical_payload, occurred_at, event_hash FROM ledger_events WHERE group_id = :g ORDER BY sequence DESC LIMIT 25",
     { g: groupId },
@@ -470,7 +477,7 @@ export function getLedger(ctx: Ctx, groupId: string, userId: string) {
   };
 }
 
-export function lastSequence(db: Db, groupId: string): number {
-  return (one<{ s: number }>(db, "SELECT COALESCE(MAX(sequence), 0) AS s FROM ledger_events WHERE group_id = :g", { g: groupId })
+export async function lastSequence(db: Db, groupId: string): Promise<number> {
+  return (await (await one<{ s: number }>(db, "SELECT COALESCE(MAX(sequence), 0) AS s FROM ledger_events WHERE group_id = :g", { g: groupId }))
     ?.s ?? 0) as number;
 }

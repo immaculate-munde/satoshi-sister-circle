@@ -30,7 +30,7 @@ export const POST = api(
     let userId: string;
     if ("personaId" in input) {
       if (!cfg.demo) throw new DomainError("FORBIDDEN", "Demo personas are disabled", 403);
-      const u = one<{ id: string }>(ctx.db, "SELECT id FROM users WHERE id = :id AND is_demo = 1", { id: input.personaId });
+      const u = await one<{ id: string }>(ctx.db, "SELECT id FROM users WHERE id = :id AND is_demo = 1", { id: input.personaId });
       if (!u) throw new DomainError("NOT_FOUND", "Persona not found", 404);
       userId = u.id;
     } else {
@@ -38,14 +38,14 @@ export const POST = api(
         throw new DomainError("BAD_PASSCODE", "That passcode is not right", 401);
       }
       userId = id();
-      run(ctx.db, "INSERT INTO users (id, display_name, is_demo, created_at) VALUES (:id, :n, :d, :now)", {
+      await run(ctx.db, "INSERT INTO users (id, display_name, is_demo, created_at) VALUES (:id, :n, :d, :now)", {
         id: userId,
         n: input.displayName,
         d: cfg.demo ? 1 : 0,
         now: nowIso(),
       });
     }
-    const s = createSession(ctx.db, userId);
+    const s = await createSession(ctx.db, userId);
     await setSessionCookie(s.token, s.maxAge);
     return NextResponse.json({ ok: true });
   },

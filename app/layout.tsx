@@ -34,7 +34,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const jar = await cookies();
   const cookieLocale = jar.get("locale")?.value;
   const locale: Locale = cookieLocale === "sw" || cookieLocale === "en" ? cookieLocale : process.env.NEXT_PUBLIC_DEFAULT_LOCALE === "sw" ? "sw" : "en";
-  const mode = { provider: cfg.mode, simulatedPayments: cfg.allowSimulatedPayments, network: getProvider().network };
+  const mode = { provider: cfg.mode, simulatedPayments: cfg.allowSimulatedPayments, network: (await getProvider()).network };
   return (
     <html lang={locale} className={`${jakarta.variable} h-full antialiased`}>
       <body className="min-h-dvh">

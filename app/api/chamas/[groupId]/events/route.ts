@@ -7,7 +7,7 @@ import { lastSequence, requireMember } from "@/lib/domain/chamas";
  */
 export const GET = api<{ groupId: string }>(async ({ ctx, req, params }) => {
   const user = await authed(ctx);
-  requireMember(ctx.db, params.groupId, user.id);
+  await requireMember(ctx.db, params.groupId, user.id);
   const encoder = new TextEncoder();
   let timer: ReturnType<typeof setInterval> | undefined;
   let closed = false;
@@ -16,13 +16,13 @@ export const GET = api<{ groupId: string }>(async ({ ctx, req, params }) => {
     if (timer) clearInterval(timer);
   };
   const stream = new ReadableStream({
-    start(controller) {
+    async start(controller) {
       let last = -1;
       let ticks = 0;
-      const send = () => {
+      const send = async () => {
         if (closed) return;
         try {
-          const seq = lastSequence(ctx.db, params.groupId);
+          const seq = await lastSequence(ctx.db, params.groupId);
           if (seq !== last) {
             last = seq;
             controller.enqueue(encoder.encode(`event: ledger\ndata: ${JSON.stringify({ sequence: seq })}\n\n`));
@@ -38,7 +38,7 @@ export const GET = api<{ groupId: string }>(async ({ ctx, req, params }) => {
           }
         }
       };
-      send();
+      await send();
       timer = setInterval(send, 1000);
       req.signal.addEventListener("abort", () => {
         stop();

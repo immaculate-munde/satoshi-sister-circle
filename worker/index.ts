@@ -7,13 +7,15 @@ import { hostname } from "node:os";
 import { randomBytes } from "node:crypto";
 import { config } from "../lib/config";
 import { many } from "../lib/db";
+import type { Ctx } from "../lib/domain/context";
 import { serverCtx } from "../lib/domain/server";
 import { reconcileInvoice } from "../lib/domain/invoices";
 import type { PaymentState } from "../lib/payments/provider";
+import { ensureFreshRates } from "../lib/domain/live-rates";
 import { runTick } from "./tick";
 
 const cfg = config();
-const ctx = serverCtx();
+let ctx: Ctx;
 const workerId = `${hostname()}-${process.pid}-${randomBytes(3).toString("hex")}`;
 const FAST_MS = 1000;
 const watchers = new Map<string, () => void>();
@@ -25,7 +27,7 @@ function log(msg: string) {
 
 /** Live watch for open invoices; the periodic reconciler is the safety net for missed events. */
 async function syncWatchers() {
-  const open = many<{ id: string; payment_hash: string; bolt11: string; wallet_ref: string }>(
+  const open = await many<{ id: string; payment_hash: string; bolt11: string; wallet_ref: string }>(
     ctx.db,
     "SELECT id, payment_hash, bolt11, wallet_ref FROM invoices WHERE status = 'PENDING' AND payment_hash IS NOT NULL",
   );
@@ -53,11 +55,13 @@ async function syncWatchers() {
 }
 
 async function main() {
+  ctx = await serverCtx();
   log(`starting in ${cfg.mode} mode, network: ${ctx.provider.network}, reconcile every ${cfg.reconcileIntervalSeconds}s`);
   let lastFull = 0;
   while (!stopping) {
     try {
       const full = Date.now() - lastFull >= cfg.reconcileIntervalSeconds * 1000;
+      if (cfg.fxProvider === "live") await ensureFreshRates(ctx.db);
       await syncWatchers();
       const r = await runTick(ctx, workerId, { reconcileInvoices: full });
       if (full) lastFull = Date.now();
@@ -78,4 +82,7 @@ for (const sig of ["SIGINT", "SIGTERM"] as const) {
   });
 }
 
-main();
+main().catch((e) => {
+  console.error(e instanceof Error ? e.message : e);
+  process.exit(1);
+});

@@ -9,7 +9,7 @@ export const POST = api(
   async ({ ctx, req }) => {
     const { locale } = await parseBody(req, z.object({ locale: z.enum(["en", "sw"]) }));
     const user = await currentUser(ctx.db);
-    if (user) run(ctx.db, "UPDATE users SET locale = :l WHERE id = :id", { l: locale, id: user.id });
+    if (user) await run(ctx.db, "UPDATE users SET locale = :l WHERE id = :id", { l: locale, id: user.id });
     (await cookies()).set("locale", locale, { path: "/", maxAge: 365 * 86400, sameSite: "lax" });
     return NextResponse.json({ locale });
   },

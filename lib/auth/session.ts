@@ -18,10 +18,10 @@ function hashToken(token: string) {
   return createHmac("sha256", config().sessionSecret).update(token).digest("hex");
 }
 
-export function createSession(db: Db, userId: string) {
+export async function createSession(db: Db, userId: string) {
   const token = randomBytes(32).toString("base64url");
   const now = new Date();
-  run(
+  await run(
     db,
     "INSERT INTO sessions (id, user_id, token_hash, expires_at, created_at) VALUES (:id, :u, :h, :exp, :now)",
     { id: id(), u: userId, h: hashToken(token), exp: new Date(now.getTime() + SESSION_TTL_MS).toISOString(), now: now.toISOString() },
@@ -43,7 +43,7 @@ export async function setSessionCookie(token: string, maxAge: number) {
 export async function destroySession(db: Db) {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
-  if (token) run(db, "DELETE FROM sessions WHERE token_hash = :h", { h: hashToken(token) });
+  if (token) await run(db, "DELETE FROM sessions WHERE token_hash = :h", { h: hashToken(token) });
   jar.delete(SESSION_COOKIE);
 }
 
@@ -51,7 +51,7 @@ export async function currentUser(db: Db): Promise<SessionUser | null> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const row = one<{ id: string; display_name: string; locale: string; is_demo: number; expires_at: string }>(
+  const row = await one<{ id: string; display_name: string; locale: string; is_demo: number; expires_at: string }>(
     db,
     `SELECT u.id, u.display_name, u.locale, u.is_demo, s.expires_at FROM sessions s JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = :h`,

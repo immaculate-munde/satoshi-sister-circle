@@ -46,14 +46,14 @@ export type LedgerEventType =
   | "GROUP_COMPLETED";
 
 /**
- * Append a hash-chained audit event. Must be called inside tx(). Tamper-evident relative to an
+ * Append a hash-chained audit event. Must be called inside await tx(). Tamper-evident relative to an
  * exported checkpoint hash, not tamper-proof against someone who rewrites the entire chain.
  */
-export function appendEvent(
+export async function appendEvent(
   db: Db,
   e: { groupId: string; cycleId?: string | null; type: LedgerEventType; payload: Record<string, unknown>; actor: string; at: Date },
 ) {
-  const prev = one<{ sequence: number; event_hash: string }>(
+  const prev = await one<{ sequence: number; event_hash: string }>(
     db,
     "SELECT sequence, event_hash FROM ledger_events WHERE group_id = :g ORDER BY sequence DESC LIMIT 1",
     { g: e.groupId },
@@ -65,7 +65,7 @@ export function appendEvent(
   const eventHash = sha256(
     canonicalJson({ groupId: e.groupId, sequence, type: e.type, payload: canonicalPayload, previousHash, occurredAt, actor: e.actor }),
   );
-  run(
+  await run(
     db,
     `INSERT INTO ledger_events (id, group_id, cycle_id, sequence, type, canonical_payload, previous_hash, event_hash, occurred_at, actor_ref)
      VALUES (:id, :g, :c, :seq, :type, :payload, :prev, :hash, :at, :actor)`,
@@ -85,8 +85,8 @@ export function appendEvent(
   return { sequence, eventHash };
 }
 
-export function verifyChain(db: Db, groupId: string): { ok: boolean; brokenAt?: number; head: string } {
-  const rows = many<{
+export async function verifyChain(db: Db, groupId: string): Promise<{ ok: boolean; brokenAt?: number; head: string }> {
+  const rows = await many<{
     sequence: number;
     type: string;
     canonical_payload: string;

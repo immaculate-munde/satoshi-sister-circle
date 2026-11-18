@@ -14,25 +14,25 @@ export const MAX_RETRYABLE_ATTEMPTS = 5;
 const backoffMs = (attempt: number, retryAfterSeconds?: number) =>
   Math.max((retryAfterSeconds ?? 0) * 1000, Math.min(5 * 60_000, 2 ** attempt * 5_000));
 
-function getPayout(ctx: Ctx, payoutId: string) {
-  return one<PayoutRow>(ctx.db, "SELECT * FROM payouts WHERE id = :id", { id: payoutId });
+async function getPayout(ctx: Ctx, payoutId: string) {
+  return await one<PayoutRow>(ctx.db, "SELECT * FROM payouts WHERE id = :id", { id: payoutId });
 }
 
 /**
  * Claim one due payout under a lease. A PROCESSING payout whose lease expired may have been sent by
  * a crashed worker, so it becomes UNKNOWN (reconcile) rather than being re-sent.
  */
-function claim(ctx: Ctx, workerId: string): PayoutRow | null {
+async function claim(ctx: Ctx, workerId: string): Promise<PayoutRow | null> {
   const now = ctx.now();
-  return tx(ctx.db, () => {
-    const stale = many<PayoutRow>(
+  return await tx(ctx.db, async () => {
+    const stale = await many<PayoutRow>(
       ctx.db,
       "SELECT * FROM payouts WHERE status = 'PROCESSING' AND lease_until < :now",
       { now: now.toISOString() },
     );
-    for (const p of stale) markUnknown(ctx, p, "Worker lease expired while payout was in flight", now);
+    for (const p of stale) await markUnknown(ctx, p, "Worker lease expired while payout was in flight", now);
 
-    const p = one<PayoutRow>(
+    const p = await one<PayoutRow>(
       ctx.db,
       `SELECT * FROM payouts WHERE status = 'QUEUED' AND (next_attempt_at IS NULL OR next_attempt_at <= :now)
        ORDER BY created_at LIMIT 1`,
@@ -41,8 +41,8 @@ function claim(ctx: Ctx, workerId: string): PayoutRow | null {
     if (!p) return null;
 
     // Re-validate everything inside the lock before money moves.
-    const cycle = one<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE id = :id", { id: p.cycle_id })!;
-    const contribs = many<ContributionRow>(ctx.db, "SELECT * FROM contributions WHERE cycle_id = :c", { c: cycle.id });
+    const cycle = await (await one<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE id = :id", { id: p.cycle_id }))!;
+    const contribs = await many<ContributionRow>(ctx.db, "SELECT * FROM contributions WHERE cycle_id = :c", { c: cycle.id });
     const funded = contribs.reduce((a, c) => a + BigInt(c.settled_settlement_units), 0n);
     const dest = JSON.parse(p.destination_snapshot) as DestinationSnapshot;
     const problems: string[] = [];
@@ -55,12 +55,12 @@ function claim(ctx: Ctx, workerId: string): PayoutRow | null {
     if (p.recipient_member_id !== cycle.recipient_member_id) problems.push("recipient changed");
     if (BigInt(p.principal_units) > ctx.limits.maxPrincipalUnits) problems.push("principal above environment cap");
     if (problems.length) {
-      run(
+      await run(
         ctx.db,
         "UPDATE payouts SET status = 'FAILED', needs_operator_review = 1, last_error = :e WHERE id = :id",
         { e: `Pre-send validation failed: ${problems.join("; ")}`, id: p.id },
       );
-      appendEvent(ctx.db, {
+      await appendEvent(ctx.db, {
         groupId: cycle.group_id,
         cycleId: cycle.id,
         type: "PAYOUT_OPERATOR_REVIEW",
@@ -70,14 +70,14 @@ function claim(ctx: Ctx, workerId: string): PayoutRow | null {
       });
       return null;
     }
-    const res = run(
+    const res = await run(
       ctx.db,
       `UPDATE payouts SET status = 'PROCESSING', lease_owner = :w, lease_until = :lease, attempts = attempts + 1,
          submitted_at = :now WHERE id = :id AND status = 'QUEUED'`,
       { w: workerId, lease: new Date(now.getTime() + LEASE_MS).toISOString(), now: now.toISOString(), id: p.id },
     );
     if (Number(res.changes) !== 1) return null;
-    appendEvent(ctx.db, {
+    await appendEvent(ctx.db, {
       groupId: cycle.group_id,
       cycleId: cycle.id,
       type: "PAYOUT_SUBMITTED",
@@ -85,17 +85,17 @@ function claim(ctx: Ctx, workerId: string): PayoutRow | null {
       actor: `worker:${workerId}`,
       at: now,
     });
-    return getPayout(ctx, p.id)!;
+    return (await getPayout(ctx, p.id))!;
   });
 }
 
-function markUnknown(ctx: Ctx, p: PayoutRow, reason: string, now: Date) {
-  const cycle = one<CycleRow>(ctx.db, "SELECT group_id FROM cycles WHERE id = :id", { id: p.cycle_id })!;
-  run(ctx.db, "UPDATE payouts SET status = 'UNKNOWN', lease_owner = NULL, lease_until = NULL, last_error = :e WHERE id = :id", {
+async function markUnknown(ctx: Ctx, p: PayoutRow, reason: string, now: Date) {
+  const cycle = await (await one<CycleRow>(ctx.db, "SELECT group_id FROM cycles WHERE id = :id", { id: p.cycle_id }))!;
+  await run(ctx.db, "UPDATE payouts SET status = 'UNKNOWN', lease_owner = NULL, lease_until = NULL, last_error = :e WHERE id = :id", {
     e: reason,
     id: p.id,
   });
-  appendEvent(ctx.db, {
+  await appendEvent(ctx.db, {
     groupId: cycle.group_id,
     cycleId: p.cycle_id,
     type: "PAYOUT_UNKNOWN",
@@ -105,22 +105,22 @@ function markUnknown(ctx: Ctx, p: PayoutRow, reason: string, now: Date) {
   });
 }
 
-/** Inside tx(): record a confirmed payout, write its receipt, then advance rotation. */
-function recordSuccess(ctx: Ctx, payoutId: string, providerPaymentId: string, fee: bigint, actor: string) {
+/** Inside await tx(): record a confirmed payout, write its receipt, then advance rotation. */
+async function recordSuccess(ctx: Ctx, payoutId: string, providerPaymentId: string, fee: bigint, actor: string) {
   const now = ctx.now();
-  const p = getPayout(ctx, payoutId)!;
+  const p = (await getPayout(ctx, payoutId))!;
   if (p.status === "SUCCEEDED") return;
-  run(
+  await run(
     ctx.db,
     `UPDATE payouts SET status = 'SUCCEEDED', provider_payment_id = :pid, fee_units = :fee, sent_at = :now,
        lease_owner = NULL, lease_until = NULL, last_error = NULL WHERE id = :id`,
     { pid: providerPaymentId, fee: Number(fee), now: now.toISOString(), id: p.id },
   );
-  run(ctx.db, "UPDATE cycles SET status = 'PAID_OUT', paid_out_at = :now WHERE id = :id", { now: now.toISOString(), id: p.cycle_id });
-  const cycle = one<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE id = :id", { id: p.cycle_id })!;
-  const group = one<GroupRow>(ctx.db, "SELECT * FROM groups WHERE id = :id", { id: cycle.group_id })!;
-  const recipient = one<MemberRow>(ctx.db, "SELECT display_name FROM members WHERE id = :id", { id: p.recipient_member_id })!;
-  appendEvent(ctx.db, {
+  await run(ctx.db, "UPDATE cycles SET status = 'PAID_OUT', paid_out_at = :now WHERE id = :id", { now: now.toISOString(), id: p.cycle_id });
+  const cycle = await (await one<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE id = :id", { id: p.cycle_id }))!;
+  const group = await (await one<GroupRow>(ctx.db, "SELECT * FROM groups WHERE id = :id", { id: cycle.group_id }))!;
+  const recipient = await (await one<MemberRow>(ctx.db, "SELECT display_name FROM members WHERE id = :id", { id: p.recipient_member_id }))!;
+  await appendEvent(ctx.db, {
     groupId: group.id,
     cycleId: cycle.id,
     type: "PAYOUT_SUCCEEDED",
@@ -136,7 +136,7 @@ function recordSuccess(ctx: Ctx, payoutId: string, providerPaymentId: string, fe
     at: now,
   });
   if (fee > ctx.limits.maxFeeUnits) {
-    appendEvent(ctx.db, {
+    await appendEvent(ctx.db, {
       groupId: group.id,
       cycleId: cycle.id,
       type: "PAYOUT_OPERATOR_REVIEW",
@@ -145,15 +145,15 @@ function recordSuccess(ctx: Ctx, payoutId: string, providerPaymentId: string, fe
       at: now,
     });
   }
-  createPayoutReceipt(ctx, getPayout(ctx, p.id)!);
+  await createPayoutReceipt(ctx, (await getPayout(ctx, p.id))!);
   // Rotation advances only after confirmed success.
-  const memberCount = (one<{ n: number }>(ctx.db, "SELECT COUNT(*) AS n FROM members WHERE group_id = :g", { g: group.id })?.n ??
+  const memberCount = (await (await one<{ n: number }>(ctx.db, "SELECT COUNT(*) AS n FROM members WHERE group_id = :g", { g: group.id }))?.n ??
     0) as number;
   if (cycle.round_number >= memberCount) {
-    run(ctx.db, "UPDATE groups SET status = 'COMPLETED' WHERE id = :id", { id: group.id });
-    appendEvent(ctx.db, { groupId: group.id, type: "GROUP_COMPLETED", payload: { rounds: memberCount }, actor: "system", at: now });
+    await run(ctx.db, "UPDATE groups SET status = 'COMPLETED' WHERE id = :id", { id: group.id });
+    await appendEvent(ctx.db, { groupId: group.id, type: "GROUP_COMPLETED", payload: { rounds: memberCount }, actor: "system", at: now });
   } else {
-    openCycle(ctx, group, cycle.round_number + 1, now, "system");
+    await openCycle(ctx, group, cycle.round_number + 1, now, "system");
   }
 }
 
@@ -161,7 +161,7 @@ function recordSuccess(ctx: Ctx, payoutId: string, providerPaymentId: string, fe
 export async function processPayouts(ctx: Ctx, workerId: string, max = 10): Promise<number> {
   let n = 0;
   for (; n < max; n++) {
-    const p = claim(ctx, workerId);
+    const p = await claim(ctx, workerId);
     if (!p) break;
     const dest = JSON.parse(p.destination_snapshot) as DestinationSnapshot;
     try {
@@ -174,28 +174,28 @@ export async function processPayouts(ctx: Ctx, workerId: string, max = 10): Prom
         memo: `Chama payout ${p.request_id}`,
       });
       if (res.status === "SUCCEEDED") {
-        tx(ctx.db, () => recordSuccess(ctx, p.id, res.providerPaymentId, BigInt(res.fee), `worker:${workerId}`));
+        await tx(ctx.db, async () => recordSuccess(ctx, p.id, res.providerPaymentId, BigInt(res.fee), `worker:${workerId}`));
       } else if (res.status === "PENDING") {
-        tx(ctx.db, () => markUnknown(ctx, getPayout(ctx, p.id)!, "Provider reported PENDING; reconciling", ctx.now()));
+        await tx(ctx.db, async () => markUnknown(ctx, (await getPayout(ctx, p.id))!, "Provider reported PENDING; reconciling", ctx.now()));
       } else {
         // Provider says FAILED with no error: treat as uncertain rather than assume nothing moved.
-        tx(ctx.db, () => markUnknown(ctx, getPayout(ctx, p.id)!, "Provider reported FAILED status; reconciling", ctx.now()));
+        await tx(ctx.db, async () => markUnknown(ctx, (await getPayout(ctx, p.id))!, "Provider reported FAILED status; reconciling", ctx.now()));
       }
     } catch (e) {
       const now = ctx.now();
-      tx(ctx.db, () => {
-        const cur = getPayout(ctx, p.id)!;
-        const cycle = one<CycleRow>(ctx.db, "SELECT group_id FROM cycles WHERE id = :id", { id: p.cycle_id })!;
+      await tx(ctx.db, async () => {
+        const cur = (await getPayout(ctx, p.id))!;
+        const cycle = await (await one<CycleRow>(ctx.db, "SELECT group_id FROM cycles WHERE id = :id", { id: p.cycle_id }))!;
         if (e instanceof ProviderRejectedError) {
           if (e.retryable && cur.attempts < MAX_RETRYABLE_ATTEMPTS) {
             const next = new Date(now.getTime() + backoffMs(cur.attempts, e.retryAfterSeconds));
-            run(
+            await run(
               ctx.db,
               `UPDATE payouts SET status = 'QUEUED', lease_owner = NULL, lease_until = NULL, next_attempt_at = :next,
                  last_error = :err WHERE id = :id`,
               { next: next.toISOString(), err: e.message, id: p.id },
             );
-            appendEvent(ctx.db, {
+            await appendEvent(ctx.db, {
               groupId: cycle.group_id,
               cycleId: p.cycle_id,
               type: "PAYOUT_RETRY_SCHEDULED",
@@ -204,13 +204,13 @@ export async function processPayouts(ctx: Ctx, workerId: string, max = 10): Prom
               at: now,
             });
           } else {
-            run(
+            await run(
               ctx.db,
               `UPDATE payouts SET status = 'FAILED', lease_owner = NULL, lease_until = NULL, last_error = :err,
                  needs_operator_review = 1 WHERE id = :id`,
               { err: e.message, id: p.id },
             );
-            appendEvent(ctx.db, {
+            await appendEvent(ctx.db, {
               groupId: cycle.group_id,
               cycleId: p.cycle_id,
               type: "PAYOUT_FAILED",
@@ -220,7 +220,7 @@ export async function processPayouts(ctx: Ctx, workerId: string, max = 10): Prom
             });
           }
         } else {
-          markUnknown(ctx, cur, `Outcome unknown: ${(e as Error).message}`, now);
+          await markUnknown(ctx, cur, `Outcome unknown: ${(e as Error).message}`, now);
         }
       });
     }
@@ -233,7 +233,7 @@ export async function processPayouts(ctx: Ctx, workerId: string, max = 10): Prom
  * "not found" from a provider that guarantees lookups re-queues; otherwise stop for operator review.
  */
 export async function reconcileUnknownPayouts(ctx: Ctx, workerId: string): Promise<number> {
-  const unknown = many<PayoutRow>(ctx.db, "SELECT * FROM payouts WHERE status = 'UNKNOWN' AND needs_operator_review = 0");
+  const unknown = await many<PayoutRow>(ctx.db, "SELECT * FROM payouts WHERE status = 'UNKNOWN' AND needs_operator_review = 0");
   for (const p of unknown) {
     let found;
     try {
@@ -246,18 +246,18 @@ export async function reconcileUnknownPayouts(ctx: Ctx, workerId: string): Promi
       continue; // try again next tick
     }
     const now = ctx.now();
-    tx(ctx.db, () => {
-      const cur = getPayout(ctx, p.id)!;
+    await tx(ctx.db, async () => {
+      const cur = (await getPayout(ctx, p.id))!;
       if (cur.status !== "UNKNOWN") return;
       const dest = JSON.parse(cur.destination_snapshot) as DestinationSnapshot;
-      const cycle = one<CycleRow>(ctx.db, "SELECT group_id FROM cycles WHERE id = :id", { id: cur.cycle_id })!;
+      const cycle = await (await one<CycleRow>(ctx.db, "SELECT group_id FROM cycles WHERE id = :id", { id: cur.cycle_id }))!;
       if (found?.status === "SUCCEEDED") {
         if (BigInt(found.amount) !== BigInt(cur.principal_units) || (found.destinationWalletId && found.destinationWalletId !== dest.walletId)) {
-          run(ctx.db, "UPDATE payouts SET needs_operator_review = 1, last_error = :e WHERE id = :id", {
+          await run(ctx.db, "UPDATE payouts SET needs_operator_review = 1, last_error = :e WHERE id = :id", {
             e: "Found provider transfer does not match payout amount/destination",
             id: cur.id,
           });
-          appendEvent(ctx.db, {
+          await appendEvent(ctx.db, {
             groupId: cycle.group_id,
             cycleId: cur.cycle_id,
             type: "PAYOUT_OPERATOR_REVIEW",
@@ -267,16 +267,16 @@ export async function reconcileUnknownPayouts(ctx: Ctx, workerId: string): Promi
           });
           return;
         }
-        recordSuccess(ctx, cur.id, found.providerPaymentId, BigInt(found.fee), `reconciler:${workerId}`);
+        await recordSuccess(ctx, cur.id, found.providerPaymentId, BigInt(found.fee), `reconciler:${workerId}`);
       } else if (found?.status === "PENDING") {
         // still settling; check again next tick
       } else if (found?.status === "FAILED" || (!found && ctx.provider.definitiveLookup)) {
-        run(
+        await run(
           ctx.db,
           `UPDATE payouts SET status = 'QUEUED', next_attempt_at = :now, last_error = :e WHERE id = :id`,
           { now: now.toISOString(), e: "Confirmed not sent by provider lookup; safe to retry", id: cur.id },
         );
-        appendEvent(ctx.db, {
+        await appendEvent(ctx.db, {
           groupId: cycle.group_id,
           cycleId: cur.cycle_id,
           type: "PAYOUT_RETRY_SCHEDULED",
@@ -285,11 +285,11 @@ export async function reconcileUnknownPayouts(ctx: Ctx, workerId: string): Promi
           at: now,
         });
       } else {
-        run(ctx.db, "UPDATE payouts SET needs_operator_review = 1, last_error = :e WHERE id = :id", {
+        await run(ctx.db, "UPDATE payouts SET needs_operator_review = 1, last_error = :e WHERE id = :id", {
           e: "No matching provider transfer found and lookup is not definitive. Operator must verify before any resend.",
           id: cur.id,
         });
-        appendEvent(ctx.db, {
+        await appendEvent(ctx.db, {
           groupId: cycle.group_id,
           cycleId: cur.cycle_id,
           type: "PAYOUT_OPERATOR_REVIEW",
@@ -303,19 +303,19 @@ export async function reconcileUnknownPayouts(ctx: Ctx, workerId: string): Promi
   return unknown.length;
 }
 
-export function getPayoutView(ctx: Ctx, payoutId: string, userId: string) {
-  const p = getPayout(ctx, payoutId);
+export async function getPayoutView(ctx: Ctx, payoutId: string, userId: string) {
+  const p = await getPayout(ctx, payoutId);
   if (!p) throw notFound("Payout not found");
-  const cycle = one<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE id = :id", { id: p.cycle_id })!;
-  const { group } = requireMember(ctx.db, cycle.group_id, userId);
-  const members = many<MemberRow>(ctx.db, "SELECT * FROM members WHERE group_id = :g ORDER BY rotation_position", {
+  const cycle = await (await one<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE id = :id", { id: p.cycle_id }))!;
+  const { group } = await requireMember(ctx.db, cycle.group_id, userId);
+  const members = await many<MemberRow>(ctx.db, "SELECT * FROM members WHERE group_id = :g ORDER BY rotation_position", {
     g: group.id,
   });
-  const cycles = many<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE group_id = :g", { g: group.id });
+  const cycles = await many<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE group_id = :g", { g: group.id });
   const recipient = members.find((m) => m.id === p.recipient_member_id)!;
   const dest = JSON.parse(p.destination_snapshot) as DestinationSnapshot;
-  const receipt = one<{ id: string }>(ctx.db, "SELECT id FROM receipts WHERE payout_id = :p", { p: p.id });
-  const q = getQuote(ctx.db, cycle.quote_id);
+  const receipt = await one<{ id: string }>(ctx.db, "SELECT id FROM receipts WHERE payout_id = :p", { p: p.id });
+  const q = await getQuote(ctx.db, cycle.quote_id);
   return {
     id: p.id,
     groupId: group.id,

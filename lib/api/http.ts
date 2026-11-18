@@ -50,7 +50,7 @@ export function api<P = Record<string, string>>(handler: Handler<P>, opts: { mut
     try {
       if (opts.mutation) assertSameOrigin(req);
       const params = (await route?.params) ?? ({} as P);
-      const res = await handler({ ctx: serverCtx(), requestId, req, params });
+      const res = await handler({ ctx: await serverCtx(), requestId, req, params });
       res.headers.set("x-request-id", requestId);
       res.headers.set("cache-control", "no-store");
       return res;
@@ -116,7 +116,7 @@ export async function idempotent<P>(
   const key = a.req.headers.get("idempotency-key");
   if (key && !/^[A-Za-z0-9_-]{8,100}$/.test(key)) throw new DomainError("VALIDATION", "Bad Idempotency-Key");
   if (key) {
-    const prior = one<{ response_status: number; response_json: string }>(
+    const prior = await one<{ response_status: number; response_json: string }>(
       a.ctx.db,
       "SELECT response_status, response_json FROM idempotency_keys WHERE user_id = :u AND scope = :s AND key = :k",
       { u: userId, s: scope, k: key },
@@ -131,7 +131,7 @@ export async function idempotent<P>(
   const { status, body } = await fn();
   const json = JSON.stringify(body);
   if (key && status < 500) {
-    run(
+    await run(
       a.ctx.db,
       `INSERT INTO idempotency_keys (user_id, scope, key, response_status, response_json, created_at)
        VALUES (:u, :s, :k, :st, :j, :now) ON CONFLICT DO NOTHING`,

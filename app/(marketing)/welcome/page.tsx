@@ -113,88 +113,100 @@ function Landing() {
         ) : null}
 
         <main id="top">
-          {/* Hero — Jadoo split: copy left, art right */}
-          <section className="brand-shell grid items-center gap-10 pb-16 pt-2 lg:grid-cols-2 lg:gap-8 lg:pb-24 lg:pt-4">
-            <div className="animate-fade-up order-2 lg:order-1">
-              <p className="brand-kicker">{t("landing.hero.kicker")}</p>
-              <h1 className="mt-3 max-w-xl text-[2.55rem] leading-[1.08] font-extrabold tracking-tight text-forest sm:text-[3.5rem] lg:text-[3.9rem]">
-                {t("landing.hero.title")}
-              </h1>
-              <p className="mt-5 max-w-lg text-[16px] leading-relaxed text-muted sm:text-[18px]">{t("landing.hero.body")}</p>
-              <div className="mt-8 flex flex-col gap-3 sm:max-w-md sm:flex-row sm:items-center">
-                <button type="button" className="brand-btn brand-btn-primary sm:flex-1" onClick={() => start("home")} disabled={busy}>
-                  {busy && after === "home" ? t("common.loading") : t("welcome.getStarted")}
-                </button>
-                <button type="button" className="brand-btn brand-btn-outline sm:flex-1" onClick={() => start("invite")} disabled={busy}>
-                  {t("welcome.haveInvite")}
-                </button>
+          {/* Hero: wide art banner with a floating cream card (furniture-landing pattern) */}
+          <section className="brand-shell pb-14 lg:pb-20">
+            <div className="relative overflow-hidden rounded-[28px] bg-sage">
+              <div className="relative flex min-h-[340px] items-center justify-center px-4 pt-8 pb-40 sm:min-h-[420px] lg:min-h-[500px] lg:justify-start lg:px-16 lg:pb-8">
+                <LandingHeroArt className="brand-hero-art relative z-[1] w-full max-w-[20rem] sm:max-w-[24rem] lg:max-w-[28rem]" />
+                <div className="absolute top-[8%] left-3 z-[2] max-w-[11.5rem] rounded-2xl bg-white px-3 py-2.5 text-[12px] font-semibold text-forest shadow-[var(--shadow-card)] sm:left-8 sm:text-[13px]">
+                  <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-sage text-[11px] text-money" aria-hidden>
+                    ✓
+                  </span>
+                  {t("landing.chip.paid")}
+                </div>
+                <div className="absolute top-[26%] left-[42%] z-[2] hidden max-w-[13rem] rounded-2xl bg-white px-3 py-2.5 text-[13px] font-semibold text-forest shadow-[var(--shadow-card)] lg:block">
+                  <span className="mr-1.5 inline-block text-btc" aria-hidden>
+                    ⚡
+                  </span>
+                  {t("landing.chip.payout")}
+                </div>
               </div>
-            </div>
-            <div className="relative order-1 flex min-h-[340px] items-center justify-center animate-fade-up lg:order-2 lg:min-h-[500px]" style={{ animationDelay: "80ms" }}>
-              <LandingHeroArt className="brand-hero-art relative z-[1] w-full max-w-[22rem] sm:max-w-[26rem] lg:max-w-[30rem]" />
-              {/* Floating status chips — same pattern as the reference mock */}
-              <div className="absolute top-[8%] left-0 z-[2] max-w-[11.5rem] rounded-2xl bg-white px-3 py-2.5 text-[12px] font-semibold text-forest shadow-[var(--shadow-card)] sm:left-[-0.5rem] sm:max-w-[13rem] sm:text-[13px]">
-                <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-sage text-[11px] text-money" aria-hidden>
-                  ✓
-                </span>
-                {t("landing.chip.paid")}
-              </div>
-              <div className="absolute top-[18%] right-0 z-[2] max-w-[11.5rem] rounded-2xl bg-white px-3 py-2.5 text-[12px] font-semibold text-forest shadow-[var(--shadow-card)] sm:right-[-0.5rem] sm:max-w-[13rem] sm:text-[13px]">
-                <span className="mr-1.5 inline-block text-btc" aria-hidden>
-                  ⚡
-                </span>
-                {t("landing.chip.payout")}
-              </div>
-              <div className="absolute bottom-[10%] left-[6%] z-[2] max-w-[12rem] rounded-2xl bg-white px-3 py-2.5 text-[12px] font-semibold text-forest shadow-[var(--shadow-card)] sm:bottom-[14%] sm:text-[13px]">
-                <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-money text-[11px] text-white" aria-hidden>
-                  3
-                </span>
-                {t("landing.chip.round")}
+              <div className="animate-fade-up absolute right-4 bottom-4 left-4 z-[3] rounded-[22px] bg-cream p-6 shadow-[var(--shadow-soft)] sm:left-auto sm:max-w-md sm:p-8 lg:top-1/2 lg:right-12 lg:bottom-auto lg:-translate-y-1/2">
+                <p className="brand-kicker">{t("landing.hero.kicker")}</p>
+                <h1 className="mt-2 text-[1.8rem] leading-[1.12] font-extrabold tracking-tight text-forest sm:text-[2.2rem]">
+                  {t("landing.hero.title")}
+                </h1>
+                <p className="mt-3 text-[14px] leading-relaxed text-ink/80 sm:text-[15px]">{t("landing.hero.body")}</p>
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                  <button type="button" className="brand-btn brand-btn-primary sm:flex-1" onClick={() => start("home")} disabled={busy}>
+                    {busy && after === "home" ? t("common.loading") : t("welcome.getStarted")}
+                  </button>
+                  <button type="button" className="brand-btn brand-btn-outline sm:flex-1" onClick={() => start("invite")} disabled={busy}>
+                    {t("welcome.haveInvite")}
+                  </button>
+                </div>
               </div>
             </div>
           </section>
 
-          {/* Services — 4 columns */}
-          <section id="features" className="brand-shell scroll-mt-24 py-16 sm:py-20">
+          {/* Browse the range: three tall cards with labels underneath (our 3 steps) */}
+          <section id="how" className="brand-shell scroll-mt-24 py-12 text-center sm:py-16">
+            <h2 className="text-[1.6rem] font-extrabold tracking-tight text-forest sm:text-[2rem]">{t("landing.how.title")}</h2>
+            <p className="brand-kicker mt-2">{t("landing.how.kicker")}</p>
+            <ol className="mx-auto mt-10 grid max-w-4xl gap-6 sm:grid-cols-3">
+              {STEPS.map((step, i) => (
+                <li key={step.title}>
+                  <div
+                    className={`flex h-72 flex-col items-center justify-center rounded-2xl px-5 text-center sm:h-80 ${
+                      step.tone === "btc" ? "bg-cream" : step.tone === "money" ? "bg-sage" : "bg-forest"
+                    }`}
+                  >
+                    <span
+                      className={`text-[5rem] leading-none font-extrabold ${step.tone === "forest" ? "text-btc" : step.tone === "btc" ? "text-btc" : "text-money"}`}
+                    >
+                      {i + 1}
+                    </span>
+                    <p className={`mt-4 text-[13.5px] leading-relaxed ${step.tone === "forest" ? "text-cream/90" : "text-ink/75"}`}>{t(step.body)}</p>
+                  </div>
+                  <h3 className="mt-4 text-[16px] font-bold text-forest">{t(step.title)}</h3>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          {/* Features: product-style grid with hover overlay */}
+          <section id="features" className="brand-shell scroll-mt-24 py-12 sm:py-16">
             <div className="mx-auto max-w-2xl text-center">
-              <p className="brand-kicker">{t("landing.features.kicker")}</p>
-              <h2 className="mt-2 text-[1.85rem] font-extrabold tracking-tight text-forest sm:text-[2.4rem]">{t("landing.features.title")}</h2>
+              <h2 className="text-[1.6rem] font-extrabold tracking-tight text-forest sm:text-[2rem]">{t("landing.features.title")}</h2>
+              <p className="brand-kicker mt-2">{t("landing.features.kicker")}</p>
             </div>
-            <ul className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {SERVICES.map((s) => (
-                <li key={s.title} className="group rounded-[28px] bg-white p-6 text-center transition-shadow hover:shadow-[var(--shadow-card)]">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">{s.icon}</div>
-                  <h3 className="text-[17px] font-bold text-forest">{t(s.title)}</h3>
-                  <p className="mt-2 text-[14px] leading-relaxed text-muted">{t(s.body)}</p>
+                <li key={s.title} className="group overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-card)]">
+                  <div className="relative flex h-44 items-center justify-center bg-paper">
+                    <div className="flex h-16 w-16 items-center justify-center">{s.icon}</div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-forest/75 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                      <button
+                        type="button"
+                        className="rounded-md bg-white px-4 py-2 text-[13px] font-bold text-forest"
+                        onClick={() => start("home")}
+                        disabled={busy}
+                      >
+                        {t("welcome.getStarted")}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-[15px] font-bold text-forest">{t(s.title)}</h3>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{t(s.body)}</p>
+                  </div>
                 </li>
               ))}
             </ul>
           </section>
 
-          {/* How it works — steps + floating preview */}
-          <section id="how" className="brand-shell scroll-mt-24 grid items-center gap-12 py-8 lg:grid-cols-2 lg:gap-16 lg:py-16">
-            <div>
-              <p className="brand-kicker">{t("landing.how.kicker")}</p>
-              <h2 className="mt-2 max-w-md text-[1.85rem] font-extrabold tracking-tight text-forest sm:text-[2.35rem]">{t("landing.how.title")}</h2>
-              <ol className="mt-8 space-y-6">
-                {STEPS.map((step, i) => (
-                  <li key={step.title} className="flex gap-4">
-                    <span
-                      className={`mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold text-white ${
-                        step.tone === "btc" ? "bg-btc" : step.tone === "money" ? "bg-money" : "bg-forest"
-                      }`}
-                    >
-                      {i + 1}
-                    </span>
-                    <div>
-                      <h3 className="text-[17px] font-bold text-forest">{t(step.title)}</h3>
-                      <p className="mt-1 text-[14px] leading-relaxed text-muted">{t(step.body)}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
-
+          {/* Live preview card */}
+          <section className="brand-shell py-10 lg:py-14">
             <div className="relative mx-auto w-full max-w-md">
               <div className="brand-soft-card relative z-[1] p-6">
                 <div className="flex items-center gap-3">
