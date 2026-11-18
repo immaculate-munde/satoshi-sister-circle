@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { LandingHeroArt, Logo } from "@/components/art";
 import {
   FeatureIconAbroad,
@@ -12,6 +12,7 @@ import {
 import { useT } from "@/components/providers";
 import { SignInDialog } from "@/features/auth/signin-dialog";
 import { apiFetch } from "@/lib/client/api";
+import { supabaseEnabled } from "@/lib/client/supabase";
 import type { MessageKey } from "@/i18n/en";
 import type { ReactNode } from "react";
 
@@ -34,10 +35,15 @@ function Landing() {
   const params = useSearchParams();
   const next = params.get("next");
   const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/home";
-  const [signInOpen, setSignInOpen] = useState(params.get("signin") === "1");
+  const [signInOpen, setSignInOpen] = useState(!supabaseEnabled && params.get("signin") === "1");
   const [after, setAfter] = useState<"home" | "invite">("home");
   const [busy, setBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Bounced here by a 401 (or an old link)? Go to the real sign-in page.
+  useEffect(() => {
+    if (supabaseEnabled && params.get("signin") === "1") router.replace(`/signin?next=${encodeURIComponent(safeNext)}`);
+  }, [params, router, safeNext]);
 
   async function start(target: "home" | "invite") {
     setBusy(true);
@@ -49,6 +55,10 @@ function Landing() {
         return;
       }
       setAfter(target);
+      if (supabaseEnabled) {
+        router.push(`/signin?next=${encodeURIComponent(target === "invite" ? "/join" : safeNext)}`);
+        return;
+      }
       setSignInOpen(true);
     } finally {
       setBusy(false);

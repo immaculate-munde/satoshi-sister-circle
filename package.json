@@ -20,6 +20,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
     "graphql-ws": "6.4.1",
     "next": "16.4.5",
     "pdf-lib": "1.17.1",
