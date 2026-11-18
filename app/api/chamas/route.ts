@@ -5,7 +5,7 @@ import { createChama, listChamas } from "@/lib/domain/chamas";
 
 export const GET = api(async ({ ctx }) => {
   const user = await authed(ctx);
-  return NextResponse.json(listChamas(ctx, user.id));
+  return NextResponse.json(await listChamas(ctx, user.id));
 });
 
 const createSchema = z.object({

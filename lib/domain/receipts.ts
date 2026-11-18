@@ -44,12 +44,12 @@ export const REMITTANCE_BENCHMARK = {
     "Historical UK to Kenya remittance cost range (World Bank Remittance Prices Worldwide, 2025, rounded 3.4% to 4.4%). Not a live bank quote.",
 };
 
-function persist(db: Db, secret: string, groupId: string, snap: ReceiptSnapshot, refs: { contributionId?: string; payoutId?: string }) {
+async function persist(db: Db, secret: string, groupId: string, snap: ReceiptSnapshot, refs: { contributionId?: string; payoutId?: string }) {
   const json = canonicalJson(snap);
   const contentHash = sha256(json);
   const signature = createHmac("sha256", secret).update(contentHash).digest("hex");
   const rid = id();
-  run(
+  await run(
     db,
     `INSERT INTO receipts (id, receipt_number, kind, group_id, contribution_id, payout_id, snapshot_json, content_hash, signature, settled_at, created_at)
      VALUES (:id, :num, :kind, :g, :c, :p, :json, :hash, :sig, :settled, :now)`,
@@ -72,24 +72,24 @@ function persist(db: Db, secret: string, groupId: string, snap: ReceiptSnapshot,
 
 const pad = (n: number, w: number) => String(n).padStart(w, "0");
 
-/** Inside tx(): immutable receipt from settled records. */
-export function createContributionReceipt(ctx: Ctx, invoice: InvoiceRow, settledAt: string, proofRef: string) {
+/** Inside await tx(): immutable receipt from settled records. */
+export async function createContributionReceipt(ctx: Ctx, invoice: InvoiceRow, settledAt: string, proofRef: string) {
   const db = ctx.db;
-  const c = one<ContributionRow>(db, "SELECT * FROM contributions WHERE id = :id", { id: invoice.contribution_id })!;
-  const cycle = one<CycleRow>(db, "SELECT * FROM cycles WHERE id = :id", { id: c.cycle_id })!;
-  const group = one<GroupRow>(db, "SELECT * FROM groups WHERE id = :id", { id: cycle.group_id })!;
-  const member = one<MemberRow>(db, "SELECT * FROM members WHERE id = :id", { id: c.member_id })!;
+  const c = await (await one<ContributionRow>(db, "SELECT * FROM contributions WHERE id = :id", { id: invoice.contribution_id }))!;
+  const cycle = await (await one<CycleRow>(db, "SELECT * FROM cycles WHERE id = :id", { id: c.cycle_id }))!;
+  const group = await (await one<GroupRow>(db, "SELECT * FROM groups WHERE id = :id", { id: cycle.group_id }))!;
+  const member = await (await one<MemberRow>(db, "SELECT * FROM members WHERE id = :id", { id: c.member_id }))!;
   const seq =
-    ((one<{ n: number }>(
+    ((await (await one<{ n: number }>(
       db,
       "SELECT COUNT(*) AS n FROM receipts WHERE contribution_id IN (SELECT id FROM contributions WHERE cycle_id = :c)",
       { c: cycle.id },
-    )?.n ?? 0) as number) + 1;
-  const q = getQuote(db, invoice.quote_id);
+    ))?.n ?? 0) as number) + 1;
+  const q = await getQuote(db, invoice.quote_id);
   const isDiaspora = invoice.kind === "DIASPORA";
   let diaspora: ReceiptSnapshot["diaspora"];
   if (isDiaspora && invoice.diaspora_quote_id && invoice.diaspora_source_minor) {
-    const dq = getQuote(db, invoice.diaspora_quote_id);
+    const dq = await getQuote(db, invoice.diaspora_quote_id);
     const src = BigInt(invoice.diaspora_source_minor);
     diaspora = {
       sourceMinor: src.toString(),
@@ -136,12 +136,12 @@ export function createContributionReceipt(ctx: Ctx, invoice: InvoiceRow, settled
   return persist(db, ctx.receiptSecret, group.id, snap, { contributionId: c.id });
 }
 
-export function createPayoutReceipt(ctx: Ctx, payout: PayoutRow) {
+export async function createPayoutReceipt(ctx: Ctx, payout: PayoutRow) {
   const db = ctx.db;
-  const cycle = one<CycleRow>(db, "SELECT * FROM cycles WHERE id = :id", { id: payout.cycle_id })!;
-  const group = one<GroupRow>(db, "SELECT * FROM groups WHERE id = :id", { id: cycle.group_id })!;
-  const recipient = one<MemberRow>(db, "SELECT * FROM members WHERE id = :id", { id: payout.recipient_member_id })!;
-  const q = getQuote(db, cycle.quote_id);
+  const cycle = await (await one<CycleRow>(db, "SELECT * FROM cycles WHERE id = :id", { id: payout.cycle_id }))!;
+  const group = await (await one<GroupRow>(db, "SELECT * FROM groups WHERE id = :id", { id: cycle.group_id }))!;
+  const recipient = await (await one<MemberRow>(db, "SELECT * FROM members WHERE id = :id", { id: payout.recipient_member_id }))!;
+  const q = await getQuote(db, cycle.quote_id);
   const dest = JSON.parse(payout.destination_snapshot) as DestinationSnapshot;
   const snap: ReceiptSnapshot = {
     kind: "PAYOUT",
@@ -168,8 +168,8 @@ export function createPayoutReceipt(ctx: Ctx, payout: PayoutRow) {
   return persist(db, ctx.receiptSecret, group.id, snap, { payoutId: payout.id });
 }
 
-export function getReceipt(ctx: Ctx, receiptId: string, userId: string) {
-  const r = one<{
+export async function getReceipt(ctx: Ctx, receiptId: string, userId: string) {
+  const r = await one<{
     id: string;
     group_id: string;
     kind: ReceiptKind;
@@ -181,7 +181,7 @@ export function getReceipt(ctx: Ctx, receiptId: string, userId: string) {
     contribution_id: string | null;
   }>(ctx.db, "SELECT * FROM receipts WHERE id = :id", { id: receiptId });
   if (!r) throw notFound("Receipt not found");
-  const member = one(ctx.db, "SELECT id FROM members WHERE group_id = :g AND user_id = :u", { g: r.group_id, u: userId });
+  const member = await one(ctx.db, "SELECT id FROM members WHERE group_id = :g AND user_id = :u", { g: r.group_id, u: userId });
   if (!member) throw notFound("Receipt not found");
   const expected = createHmac("sha256", ctx.receiptSecret).update(r.content_hash).digest("hex");
   const intact = sha256(r.snapshot_json) === r.content_hash && expected === r.signature;

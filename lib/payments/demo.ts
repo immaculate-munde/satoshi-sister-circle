@@ -57,8 +57,8 @@ export class DemoProvider implements PaymentsProvider {
     return `${groupAccountRef}:${asset}`;
   }
 
-  ensureWallet(walletId: string, ownerLabel: string, asset: Asset, initialBalance = 0n) {
-    run(
+  async ensureWallet(walletId: string, ownerLabel: string, asset: Asset, initialBalance = 0n) {
+    await run(
       this.db,
       `INSERT INTO demo_wallets (id, owner_label, asset, balance_units, created_at)
        VALUES (:id, :label, :asset, :bal, :now) ON CONFLICT(id) DO NOTHING`,
@@ -87,7 +87,7 @@ export class DemoProvider implements PaymentsProvider {
   }): Promise<CreatedInvoice> {
     const existing = await this.findInvoiceByRequestId(input.requestId);
     if (existing) return existing;
-    const wallet = one<{ asset: Asset }>(this.db, "SELECT asset FROM demo_wallets WHERE id = :id", { id: input.walletId });
+    const wallet = await one<{ asset: Asset }>(this.db, "SELECT asset FROM demo_wallets WHERE id = :id", { id: input.walletId });
     if (!wallet) throw new ProviderRejectedError("Unknown demo wallet", false);
     if (wallet.asset !== input.asset) throw new ProviderRejectedError("Wallet asset mismatch", false);
     const preimage = randomBytes(32);
@@ -109,7 +109,7 @@ export class DemoProvider implements PaymentsProvider {
       exp: expiresAt,
       now: now.toISOString(),
     };
-    run(
+    await run(
       this.db,
       `INSERT INTO demo_invoices (payment_hash, provider_invoice_id, wallet_id, asset, amount_units, memo, request_id,
          payment_request, status, expires_at, created_at)
@@ -127,12 +127,12 @@ export class DemoProvider implements PaymentsProvider {
   }
 
   async findInvoiceByRequestId(requestId: string): Promise<CreatedInvoice | null> {
-    const r = one<DemoInvoiceRow>(this.db, "SELECT * FROM demo_invoices WHERE request_id = :rid", { rid: requestId });
+    const r = await one<DemoInvoiceRow>(this.db, "SELECT * FROM demo_invoices WHERE request_id = :rid", { rid: requestId });
     return r ? this.toCreated(r) : null;
   }
 
   async getInvoiceStatus(invoice: { paymentHash: string }): Promise<InvoiceStatus> {
-    const r = one<DemoInvoiceRow>(this.db, "SELECT * FROM demo_invoices WHERE payment_hash = :h", {
+    const r = await one<DemoInvoiceRow>(this.db, "SELECT * FROM demo_invoices WHERE payment_hash = :h", {
       h: invoice.paymentHash,
     });
     if (!r) return { state: "UNKNOWN" };
@@ -168,13 +168,13 @@ export class DemoProvider implements PaymentsProvider {
    * SIMULATION ONLY: a test wallet pays a demo invoice. Moves demo balances inside the demo
    * provider's books. Expired invoices can still be paid late (to exercise late-settlement handling).
    */
-  simulatePayment(paymentHash: string, payerWalletId: string, amountOverride?: bigint) {
-    return tx(this.db, () => {
-      const r = one<DemoInvoiceRow>(this.db, "SELECT * FROM demo_invoices WHERE payment_hash = :h", { h: paymentHash });
+  async simulatePayment(paymentHash: string, payerWalletId: string, amountOverride?: bigint) {
+    return await tx(this.db, async () => {
+      const r = await one<DemoInvoiceRow>(this.db, "SELECT * FROM demo_invoices WHERE payment_hash = :h", { h: paymentHash });
       if (!r) throw new ProviderRejectedError("Unknown demo invoice", false);
       if (r.status === "PAID") return { alreadyPaid: true };
       const amount = amountOverride ?? BigInt(r.amount_units);
-      const payer = one<{ balance_units: number; asset: Asset }>(
+      const payer = await one<{ balance_units: number; asset: Asset }>(
         this.db,
         "SELECT balance_units, asset FROM demo_wallets WHERE id = :id",
         { id: payerWalletId },
@@ -183,20 +183,20 @@ export class DemoProvider implements PaymentsProvider {
       if (payer.asset !== r.asset) throw new ProviderRejectedError("Payer wallet asset mismatch", false);
       if (BigInt(payer.balance_units) < amount) throw new ProviderRejectedError("Test wallet balance too low", false);
       const now = nowIso(this.now());
-      run(this.db, "UPDATE demo_wallets SET balance_units = balance_units - :a WHERE id = :id", {
+      await run(this.db, "UPDATE demo_wallets SET balance_units = balance_units - :a WHERE id = :id", {
         a: Number(amount),
         id: payerWalletId,
       });
-      run(this.db, "UPDATE demo_wallets SET balance_units = balance_units + :a WHERE id = :id", {
+      await run(this.db, "UPDATE demo_wallets SET balance_units = balance_units + :a WHERE id = :id", {
         a: Number(amount),
         id: r.wallet_id,
       });
-      run(
+      await run(
         this.db,
         "UPDATE demo_invoices SET status = 'PAID', paid_units = :a, paid_at = :now WHERE payment_hash = :h",
         { a: Number(amount), now, h: paymentHash },
       );
-      run(
+      await run(
         this.db,
         `INSERT INTO demo_transfers (id, request_id, source_wallet_id, destination_wallet_id, asset, amount_units,
            fee_units, memo, payment_hash, created_at)
@@ -226,20 +226,20 @@ export class DemoProvider implements PaymentsProvider {
   }): Promise<SendResult> {
     if (this.faults.timeoutBeforeSend) throw new ProviderUnknownOutcomeError("Simulated timeout before send");
     if (this.faults.rejectRetryable) throw new ProviderRejectedError("Simulated rate limit", true, 1);
-    const existing = one<{ id: string; fee_units: number }>(
+    const existing = await one<{ id: string; fee_units: number }>(
       this.db,
       "SELECT id, fee_units FROM demo_transfers WHERE request_id = :rid",
       { rid: input.requestId },
     );
     if (existing) return { providerPaymentId: existing.id, status: "SUCCEEDED", fee: String(existing.fee_units) };
     const transferId = `demo_tx_${id()}`;
-    tx(this.db, () => {
-      const src = one<{ balance_units: number; asset: Asset }>(
+    await tx(this.db, async () => {
+      const src = await one<{ balance_units: number; asset: Asset }>(
         this.db,
         "SELECT balance_units, asset FROM demo_wallets WHERE id = :id",
         { id: input.sourceWalletId },
       );
-      const dst = one<{ asset: Asset }>(this.db, "SELECT asset FROM demo_wallets WHERE id = :id", {
+      const dst = await one<{ asset: Asset }>(this.db, "SELECT asset FROM demo_wallets WHERE id = :id", {
         id: input.destinationWalletId,
       });
       if (!src || !dst) throw new ProviderRejectedError("Unknown wallet", false);
@@ -248,15 +248,15 @@ export class DemoProvider implements PaymentsProvider {
       }
       const amount = BigInt(input.amount);
       if (BigInt(src.balance_units) < amount) throw new ProviderRejectedError("Insufficient balance", true, 30);
-      run(this.db, "UPDATE demo_wallets SET balance_units = balance_units - :a WHERE id = :id", {
+      await run(this.db, "UPDATE demo_wallets SET balance_units = balance_units - :a WHERE id = :id", {
         a: Number(amount),
         id: input.sourceWalletId,
       });
-      run(this.db, "UPDATE demo_wallets SET balance_units = balance_units + :a WHERE id = :id", {
+      await run(this.db, "UPDATE demo_wallets SET balance_units = balance_units + :a WHERE id = :id", {
         a: Number(amount),
         id: input.destinationWalletId,
       });
-      run(
+      await run(
         this.db,
         `INSERT INTO demo_transfers (id, request_id, source_wallet_id, destination_wallet_id, asset, amount_units,
            fee_units, memo, created_at)
@@ -282,7 +282,7 @@ export class DemoProvider implements PaymentsProvider {
   }
 
   async findPaymentByRequestId(input: { requestId: string }): Promise<FoundPayment | null> {
-    const t = one<{ id: string; amount_units: number; fee_units: number; destination_wallet_id: string }>(
+    const t = await one<{ id: string; amount_units: number; fee_units: number; destination_wallet_id: string }>(
       this.db,
       "SELECT * FROM demo_transfers WHERE request_id = :rid",
       { rid: input.requestId },
@@ -298,7 +298,7 @@ export class DemoProvider implements PaymentsProvider {
   }
 
   async listTransactions(walletId: string) {
-    const transactions = many(
+    const transactions = await many(
       this.db,
       `SELECT * FROM demo_transfers WHERE source_wallet_id = :w OR destination_wallet_id = :w ORDER BY created_at DESC LIMIT 100`,
       { w: walletId },
@@ -307,7 +307,7 @@ export class DemoProvider implements PaymentsProvider {
   }
 
   async resolveDestination(input: { reference: string; asset: Asset }) {
-    const w = one<{ id: string; owner_label: string; asset: Asset }>(
+    const w = await one<{ id: string; owner_label: string; asset: Asset }>(
       this.db,
       "SELECT * FROM demo_wallets WHERE id = :id",
       { id: input.reference },
@@ -318,7 +318,7 @@ export class DemoProvider implements PaymentsProvider {
   }
 
   async getBalance(walletId: string): Promise<string> {
-    const w = one<{ balance_units: number }>(this.db, "SELECT balance_units FROM demo_wallets WHERE id = :id", {
+    const w = await one<{ balance_units: number }>(this.db, "SELECT balance_units FROM demo_wallets WHERE id = :id", {
       id: walletId,
     });
     return String(w?.balance_units ?? 0);

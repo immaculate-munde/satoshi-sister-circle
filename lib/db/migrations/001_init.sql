@@ -1,12 +1,12 @@
--- Chama on Lightning: initial schema (SQLite).
--- Money is always INTEGER minor/settlement units plus an asset tag. Instants are ISO-8601 UTC strings.
+-- Chama on Lightning: initial schema (Postgres / Supabase).
+-- Money is always BIGINT minor/settlement units plus an asset tag. Instants are ISO-8601 UTC strings.
 
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
   display_name TEXT NOT NULL,
   phone TEXT,
   locale TEXT NOT NULL DEFAULT 'en',
-  is_demo INTEGER NOT NULL DEFAULT 0,
+  is_demo BIGINT NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
 
@@ -20,19 +20,19 @@ CREATE TABLE sessions (
 
 CREATE TABLE groups (
   id TEXT PRIMARY KEY,
-  number INTEGER NOT NULL UNIQUE,
+  number BIGINT NOT NULL UNIQUE,
   name TEXT NOT NULL,
   owner_user_id TEXT NOT NULL REFERENCES users(id),
   display_currency TEXT NOT NULL DEFAULT 'KES' CHECK (display_currency = 'KES'),
-  contribution_kes_minor INTEGER NOT NULL CHECK (contribution_kes_minor > 0),
+  contribution_kes_minor BIGINT NOT NULL CHECK (contribution_kes_minor > 0),
   settlement_asset TEXT NOT NULL CHECK (settlement_asset IN ('BTC_SAT','USD_CENT')),
   frequency TEXT NOT NULL CHECK (frequency IN ('WEEKLY','MONTHLY','CUSTOM')),
-  custom_interval_days INTEGER CHECK (custom_interval_days IS NULL OR custom_interval_days BETWEEN 1 AND 365),
+  custom_interval_days BIGINT CHECK (custom_interval_days IS NULL OR custom_interval_days BETWEEN 1 AND 365),
   first_due_at TEXT NOT NULL,
   timezone TEXT NOT NULL DEFAULT 'Africa/Nairobi',
   payout_policy TEXT NOT NULL DEFAULT 'ALL_PAID' CHECK (payout_policy = 'ALL_PAID'),
   status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','COMPLETED','PAUSED')),
-  rules_version INTEGER NOT NULL DEFAULT 1,
+  rules_version BIGINT NOT NULL DEFAULT 1,
   rules_locked_at TEXT,
   provider TEXT NOT NULL,
   provider_account_ref TEXT NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE members (
   display_name TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('OWNER','MEMBER')),
   invite_state TEXT NOT NULL CHECK (invite_state IN ('INVITED','JOINED')),
-  rotation_position INTEGER NOT NULL CHECK (rotation_position >= 1),
+  rotation_position BIGINT NOT NULL CHECK (rotation_position >= 1),
   payout_preference TEXT NOT NULL DEFAULT 'BTC' CHECK (payout_preference IN ('BTC','USD')),
   destination_type TEXT NOT NULL CHECK (destination_type IN ('DEMO_WALLET','FLASH_WALLET')),
   verified_destination_ref TEXT,
@@ -73,13 +73,13 @@ CREATE TABLE fx_quotes (
 CREATE TABLE cycles (
   id TEXT PRIMARY KEY,
   group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-  round_number INTEGER NOT NULL CHECK (round_number >= 1),
+  round_number BIGINT NOT NULL CHECK (round_number >= 1),
   roster_snapshot TEXT NOT NULL,
   recipient_member_id TEXT NOT NULL REFERENCES members(id),
   recipient_destination_snapshot TEXT NOT NULL,
   settlement_asset TEXT NOT NULL CHECK (settlement_asset IN ('BTC_SAT','USD_CENT')),
-  target_settlement_units INTEGER NOT NULL CHECK (target_settlement_units > 0),
-  display_target_kes_minor INTEGER NOT NULL,
+  target_settlement_units BIGINT NOT NULL CHECK (target_settlement_units > 0),
+  display_target_kes_minor BIGINT NOT NULL,
   quote_id TEXT NOT NULL REFERENCES fx_quotes(id),
   opens_at TEXT NOT NULL,
   due_at TEXT NOT NULL,
@@ -95,9 +95,9 @@ CREATE TABLE contributions (
   member_id TEXT NOT NULL REFERENCES members(id),
   payer_user_id TEXT REFERENCES users(id),
   payer_label TEXT,
-  due_kes_minor INTEGER NOT NULL,
-  due_settlement_units INTEGER NOT NULL CHECK (due_settlement_units > 0),
-  settled_settlement_units INTEGER NOT NULL DEFAULT 0,
+  due_kes_minor BIGINT NOT NULL,
+  due_settlement_units BIGINT NOT NULL CHECK (due_settlement_units > 0),
+  settled_settlement_units BIGINT NOT NULL DEFAULT 0,
   status TEXT NOT NULL CHECK (status IN ('PENDING','PAID','LATE')),
   paid_at TEXT,
   winning_invoice_id TEXT,
@@ -117,15 +117,15 @@ CREATE TABLE invoices (
   wallet_ref TEXT NOT NULL,
   network TEXT NOT NULL,
   asset TEXT NOT NULL CHECK (asset IN ('BTC_SAT','USD_CENT')),
-  amount_units INTEGER NOT NULL CHECK (amount_units > 0),
+  amount_units BIGINT NOT NULL CHECK (amount_units > 0),
   quote_id TEXT NOT NULL REFERENCES fx_quotes(id),
   diaspora_quote_id TEXT REFERENCES fx_quotes(id),
-  diaspora_source_minor INTEGER,
+  diaspora_source_minor BIGINT,
   diaspora_source_currency TEXT,
   status TEXT NOT NULL CHECK (status IN ('CREATING','PENDING','PAID','EXPIRED','FAILED','UNKNOWN')),
   expires_at TEXT NOT NULL,
   paid_at TEXT,
-  settled_units INTEGER,
+  settled_units BIGINT,
   create_request_id TEXT NOT NULL UNIQUE,
   last_checked_at TEXT,
   created_at TEXT NOT NULL,
@@ -141,18 +141,18 @@ CREATE TABLE payouts (
   destination_snapshot TEXT NOT NULL,
   source_wallet_ref TEXT NOT NULL,
   asset TEXT NOT NULL CHECK (asset IN ('BTC_SAT','USD_CENT')),
-  principal_units INTEGER NOT NULL CHECK (principal_units > 0),
-  fee_units INTEGER NOT NULL DEFAULT 0,
+  principal_units BIGINT NOT NULL CHECK (principal_units > 0),
+  fee_units BIGINT NOT NULL DEFAULT 0,
   fee_asset TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('QUEUED','PROCESSING','SUCCEEDED','FAILED','UNKNOWN')),
   provider_payment_id TEXT,
   request_id TEXT NOT NULL UNIQUE,
-  attempts INTEGER NOT NULL DEFAULT 0,
+  attempts BIGINT NOT NULL DEFAULT 0,
   lease_owner TEXT,
   lease_until TEXT,
   next_attempt_at TEXT,
   last_error TEXT,
-  needs_operator_review INTEGER NOT NULL DEFAULT 0,
+  needs_operator_review BIGINT NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   submitted_at TEXT,
   sent_at TEXT
@@ -164,7 +164,7 @@ CREATE TABLE overpayments (
   group_id TEXT NOT NULL REFERENCES groups(id),
   invoice_id TEXT NOT NULL UNIQUE REFERENCES invoices(id),
   asset TEXT NOT NULL,
-  units INTEGER NOT NULL CHECK (units > 0),
+  units BIGINT NOT NULL CHECK (units > 0),
   reason TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','REFUNDED','CREDITED')),
   created_at TEXT NOT NULL
@@ -186,14 +186,17 @@ CREATE TABLE receipts (
 CREATE UNIQUE INDEX receipts_contribution ON receipts(contribution_id, kind) WHERE contribution_id IS NOT NULL;
 CREATE UNIQUE INDEX receipts_payout ON receipts(payout_id) WHERE payout_id IS NOT NULL;
 
+CREATE FUNCTION forbid_change() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION '%', TG_ARGV[0]; END; $$;
+
 CREATE TRIGGER receipts_immutable BEFORE UPDATE ON receipts
-BEGIN SELECT RAISE(ABORT, 'receipts are immutable'); END;
+FOR EACH ROW EXECUTE FUNCTION forbid_change('receipts are immutable');
 
 CREATE TABLE ledger_events (
   id TEXT PRIMARY KEY,
   group_id TEXT NOT NULL REFERENCES groups(id),
   cycle_id TEXT,
-  sequence INTEGER NOT NULL,
+  sequence BIGINT NOT NULL,
   type TEXT NOT NULL,
   canonical_payload TEXT NOT NULL,
   previous_hash TEXT NOT NULL,
@@ -204,9 +207,9 @@ CREATE TABLE ledger_events (
 );
 
 CREATE TRIGGER ledger_events_no_update BEFORE UPDATE ON ledger_events
-BEGIN SELECT RAISE(ABORT, 'ledger_events are append-only'); END;
+FOR EACH ROW EXECUTE FUNCTION forbid_change('ledger_events are append-only');
 CREATE TRIGGER ledger_events_no_delete BEFORE DELETE ON ledger_events
-BEGIN SELECT RAISE(ABORT, 'ledger_events are append-only'); END;
+FOR EACH ROW EXECUTE FUNCTION forbid_change('ledger_events are append-only');
 
 CREATE TABLE provider_events (
   id TEXT PRIMARY KEY,
@@ -227,8 +230,8 @@ CREATE TABLE invites (
   token_hash TEXT NOT NULL UNIQUE,
   code_hint TEXT NOT NULL,
   expires_at TEXT NOT NULL,
-  max_uses INTEGER NOT NULL CHECK (max_uses >= 1),
-  uses INTEGER NOT NULL DEFAULT 0,
+  max_uses BIGINT NOT NULL CHECK (max_uses >= 1),
+  uses BIGINT NOT NULL DEFAULT 0,
   revoked_at TEXT,
   created_at TEXT NOT NULL
 );
@@ -237,7 +240,7 @@ CREATE TABLE idempotency_keys (
   user_id TEXT NOT NULL,
   scope TEXT NOT NULL,
   key TEXT NOT NULL,
-  response_status INTEGER NOT NULL,
+  response_status BIGINT NOT NULL,
   response_json TEXT NOT NULL,
   created_at TEXT NOT NULL,
   PRIMARY KEY (user_id, scope, key)
@@ -259,7 +262,7 @@ CREATE TABLE demo_wallets (
   id TEXT PRIMARY KEY,
   owner_label TEXT NOT NULL,
   asset TEXT NOT NULL CHECK (asset IN ('BTC_SAT','USD_CENT')),
-  balance_units INTEGER NOT NULL DEFAULT 0,
+  balance_units BIGINT NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
 
@@ -268,12 +271,12 @@ CREATE TABLE demo_invoices (
   provider_invoice_id TEXT NOT NULL UNIQUE,
   wallet_id TEXT NOT NULL REFERENCES demo_wallets(id),
   asset TEXT NOT NULL,
-  amount_units INTEGER NOT NULL,
+  amount_units BIGINT NOT NULL,
   memo TEXT NOT NULL,
   request_id TEXT NOT NULL UNIQUE,
   payment_request TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('PENDING','PAID','EXPIRED')),
-  paid_units INTEGER,
+  paid_units BIGINT,
   expires_at TEXT NOT NULL,
   paid_at TEXT,
   created_at TEXT NOT NULL
@@ -285,9 +288,31 @@ CREATE TABLE demo_transfers (
   source_wallet_id TEXT NOT NULL,
   destination_wallet_id TEXT NOT NULL,
   asset TEXT NOT NULL,
-  amount_units INTEGER NOT NULL,
-  fee_units INTEGER NOT NULL DEFAULT 0,
+  amount_units BIGINT NOT NULL,
+  fee_units BIGINT NOT NULL DEFAULT 0,
   memo TEXT NOT NULL,
   payment_hash TEXT,
   created_at TEXT NOT NULL
 );
+
+-- Supabase exposes the public schema through its Data API. Lock every table: the app connects with the
+-- database role (bypasses RLS) and no policies exist, so the anon/authenticated API roles can read nothing.
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE groups ENABLE ROW LEVEL SECURITY;
+ALTER TABLE members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fx_quotes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cycles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contributions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payouts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE overpayments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE receipts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ledger_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE provider_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE idempotency_keys ENABLE ROW LEVEL SECURITY;
+ALTER TABLE worker_heartbeats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE demo_wallets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE demo_invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE demo_transfers ENABLE ROW LEVEL SECURITY;

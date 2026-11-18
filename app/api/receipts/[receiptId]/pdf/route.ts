@@ -4,7 +4,7 @@ import { renderReceiptPdf } from "@/features/receipts/pdf";
 
 export const GET = api<{ receiptId: string }>(async ({ ctx, params }) => {
   const user = await authed(ctx);
-  const receipt = getReceipt(ctx, params.receiptId, user.id);
+  const receipt = await getReceipt(ctx, params.receiptId, user.id);
   const bytes = await renderReceiptPdf(receipt.snapshot, receipt.contentHash);
   return new Response(Buffer.from(bytes), {
     headers: {

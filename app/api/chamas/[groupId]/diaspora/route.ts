@@ -4,5 +4,5 @@ import { getDiasporaContext } from "@/lib/domain/diaspora";
 
 export const GET = api<{ groupId: string }>(async ({ ctx, params }) => {
   const user = await authed(ctx);
-  return NextResponse.json(getDiasporaContext(ctx, params.groupId, user.id));
+  return NextResponse.json(await getDiasporaContext(ctx, params.groupId, user.id));
 });

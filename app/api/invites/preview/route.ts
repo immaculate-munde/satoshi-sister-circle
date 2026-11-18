@@ -8,7 +8,7 @@ export const POST = api(
     const user = await authed(ctx);
     rateLimit(req, "invite", 20, 60_000, user.id);
     const { code } = await parseBody(req, z.object({ code: z.string().trim().min(4).max(40) }));
-    return NextResponse.json(previewInvite(ctx, code, user.id));
+    return NextResponse.json(await previewInvite(ctx, code, user.id));
   },
   { mutation: true },
 );

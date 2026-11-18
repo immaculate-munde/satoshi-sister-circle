@@ -4,5 +4,5 @@ import { getPayoutView } from "@/lib/domain/payouts";
 
 export const GET = api<{ payoutId: string }>(async ({ ctx, params }) => {
   const user = await authed(ctx);
-  return NextResponse.json(getPayoutView(ctx, params.payoutId, user.id));
+  return NextResponse.json(await getPayoutView(ctx, params.payoutId, user.id));
 });

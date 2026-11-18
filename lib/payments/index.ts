@@ -7,7 +7,7 @@ import type { PaymentsProvider } from "./provider";
 let provider: PaymentsProvider | null = null;
 
 /** Server-only. Never silently falls back from Flash to demo. */
-export function getProvider(): PaymentsProvider {
+export async function getProvider(): Promise<PaymentsProvider> {
   if (provider) return provider;
   const cfg = config();
   if (cfg.mode === "flash") {
@@ -19,7 +19,7 @@ export function getProvider(): PaymentsProvider {
       network: cfg.flash.network,
     });
   } else {
-    provider = new DemoProvider(getDb());
+    provider = new DemoProvider(await getDb());
   }
   return provider;
 }

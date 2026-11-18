@@ -21,6 +21,21 @@ if (!["fresh", "last-payment"].includes(scenario)) {
 }
 
 const cfg = config();
+{
+  const host = (() => {
+    try {
+      return new URL(process.env.DATABASE_URL ?? "").hostname;
+    } catch {
+      return "";
+    }
+  })();
+  const local = ["localhost", "127.0.0.1", "[::1]"].includes(host);
+  if (!local && !process.argv.includes("--confirm")) {
+    console.error(`Refusing to wipe the remote database at ${host || "(unset DATABASE_URL)"}. Seeding DROPS all app tables.
+Re-run with --confirm if that is really what you want.`);
+    process.exit(1);
+  }
+}
 if (cfg.mode !== "demo") {
   console.error("Refusing to seed: PAYMENTS_PROVIDER is not 'demo'. Seeds never write into a real provider ledger.");
   process.exit(1);
@@ -36,20 +51,20 @@ function upcomingFriday(): string {
 }
 
 async function main() {
-  const db = getDb();
-  // Reset: drop every table (triggers go with them) and re-run migrations.
-  db.exec("PRAGMA foreign_keys = OFF");
-  for (const t of many<{ name: string }>(db, "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")) {
-    db.exec(`DROP TABLE IF EXISTS "${t.name}"`);
+  const db = await getDb();
+  // Reset: drop every app table (triggers go with them) and re-run migrations. Only our own tables are touched,
+  // never the schema itself, so Supabase's roles, extensions and grants are left alone.
+  for (const t of await many<{ tablename: string }>(db, "SELECT tablename FROM pg_tables WHERE schemaname = 'public'")) {
+    await db.exec(`DROP TABLE IF EXISTS public."${t.tablename}" CASCADE`);
   }
-  db.exec("PRAGMA foreign_keys = ON");
-  migrate(db);
+  await db.exec("DROP FUNCTION IF EXISTS public.forbid_change() CASCADE");
+  await migrate(db);
 
-  const ctx = serverCtx();
+  const ctx = await serverCtx();
   const users: Record<string, string> = {};
   for (const name of ["Amina Otieno", "Wanjiku", "Faith"]) {
     users[name] = id();
-    run(db, "INSERT INTO users (id, display_name, is_demo, created_at) VALUES (:id, :n, 1, :now)", {
+    await run(db, "INSERT INTO users (id, display_name, is_demo, created_at) VALUES (:id, :n, 1, :now)", {
       id: users[name],
       n: name,
       now: nowIso(),
@@ -68,11 +83,11 @@ async function main() {
       { displayName: "Amina Otieno", isMe: true, payoutPreference: "BTC" },
     ],
   });
-  const seats = many<{ id: string; display_name: string }>(db, "SELECT id, display_name FROM members WHERE group_id = :g", {
+  const seats = await many<{ id: string; display_name: string }>(db, "SELECT id, display_name FROM members WHERE group_id = :g", {
     g: umoja.group.id,
   });
   for (const name of ["Wanjiku", "Faith"]) {
-    acceptInvite(ctx, umoja.invite.code, users[name], seats.find((s) => s.display_name === name)!.id);
+    await acceptInvite(ctx, umoja.invite.code, users[name], seats.find((s) => s.display_name === name)!.id);
   }
 
   // Second Home card: a real, record-backed group (8 members, KES 2,000 monthly).
@@ -98,8 +113,8 @@ async function main() {
     for (const name of ["Wanjiku", "Faith"]) {
       const inv = await requestInvoice(ctx, { userId: users[name], groupId: umoja.group.id, kind: "CONTRIBUTION" });
       const wallet = `user:${users[name]}:BTC_SAT`;
-      provider.ensureWallet(wallet, `${name} test wallet`, "BTC_SAT", 1_000_000n);
-      provider.simulatePayment(inv.paymentHash!, wallet);
+      await provider.ensureWallet(wallet, `${name} test wallet`, "BTC_SAT", 1_000_000n);
+      await provider.simulatePayment(inv.paymentHash!, wallet);
       await reconcileInvoice(ctx, inv.id);
     }
   }

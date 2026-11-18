@@ -16,7 +16,7 @@ export async function runTick(ctx: Ctx, workerId: string, opts: { reconcileInvoi
   let invoicesChecked = 0;
   let invoiceErrors = 0;
   if (opts.reconcileInvoices !== false) {
-    for (const invoiceId of invoicesToReconcile(ctx)) {
+    for (const invoiceId of await invoicesToReconcile(ctx)) {
       try {
         await reconcileInvoice(ctx, invoiceId);
         invoicesChecked++;
@@ -26,10 +26,10 @@ export async function runTick(ctx: Ctx, workerId: string, opts: { reconcileInvoi
       }
     }
   }
-  const lateMarked = markLateContributions(ctx);
+  const lateMarked = await markLateContributions(ctx);
   const unknownPayoutsChecked = await reconcileUnknownPayouts(ctx, workerId);
   const payoutsAttempted = await processPayouts(ctx, workerId);
-  run(
+  await run(
     ctx.db,
     `INSERT INTO worker_heartbeats (worker_id, last_beat_at, last_reconcile_at, info) VALUES (:w, :now, :rec, :info)
      ON CONFLICT(worker_id) DO UPDATE SET last_beat_at = :now, last_reconcile_at = COALESCE(:rec, last_reconcile_at), info = :info`,

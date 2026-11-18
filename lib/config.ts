@@ -20,7 +20,8 @@ const schema = z.object({
   SESSION_SECRET: z.string().default(""),
   INTERNAL_WORKER_SECRET: z.string().default(""),
   RECEIPT_SIGNING_SECRET: z.string().default(""),
-  FX_PROVIDER: z.enum(["demo"]).default("demo"),
+  FLASH_ALLOW_PRODUCTION: z.enum(["true", "false"]).default("false"),
+  FX_PROVIDER: z.enum(["demo", "live"]).default("demo"),
   RECONCILE_INTERVAL_SECONDS: z.coerce.number().int().min(5).max(600).default(30),
   ALLOW_SIMULATED_PAYMENTS: z.enum(["true", "false"]).default("false"),
   AUTH_PASSCODE: z.string().default(""),
@@ -53,7 +54,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
 
   const flash = raw.PAYMENTS_PROVIDER === "flash";
   if (flash) {
-    for (const key of ["FLASH_API_KEY", "FLASH_BTC_WALLET_ID", "FLASH_USD_WALLET_ID", "FLASH_GRAPHQL_URL"] as const) {
+    for (const key of ["FLASH_API_KEY", "FLASH_USD_WALLET_ID", "FLASH_GRAPHQL_URL"] as const) {
       if (!raw[key] || PLACEHOLDER.test(raw[key])) problems.push(`${key} is required in flash mode`);
     }
     if (raw.ALLOW_SIMULATED_PAYMENTS === "true") {
@@ -65,8 +66,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     if (raw.NEXT_PUBLIC_DEMO_MODE === "true") {
       problems.push("NEXT_PUBLIC_DEMO_MODE=true does not match PAYMENTS_PROVIDER=flash");
     }
-    if (/api\.flashapp\.me/.test(raw.FLASH_GRAPHQL_URL) && !/test/.test(raw.FLASH_GRAPHQL_URL)) {
-      problems.push("FLASH_GRAPHQL_URL points at production; this build only supports the Flash test environment");
+    if (/api\.flashapp\.me/.test(raw.FLASH_GRAPHQL_URL) && !/test/.test(raw.FLASH_GRAPHQL_URL) && raw.FLASH_ALLOW_PRODUCTION !== "true") {
+      problems.push("FLASH_GRAPHQL_URL points at production: set FLASH_ALLOW_PRODUCTION=true to confirm you intend to use real funds");
     }
   } else if (raw.NEXT_PUBLIC_DEMO_MODE === "false") {
     problems.push("NEXT_PUBLIC_DEMO_MODE=false does not match PAYMENTS_PROVIDER=demo");
@@ -82,6 +83,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
       wsUrl: raw.FLASH_WS_URL && !PLACEHOLDER.test(raw.FLASH_WS_URL) ? raw.FLASH_WS_URL : "",
       apiKey: raw.FLASH_API_KEY,
       btcWalletId: raw.FLASH_BTC_WALLET_ID,
+      btcEnabled: !flash || (!!raw.FLASH_BTC_WALLET_ID && !PLACEHOLDER.test(raw.FLASH_BTC_WALLET_ID)),
       usdWalletId: raw.FLASH_USD_WALLET_ID,
       network: raw.FLASH_NETWORK && !PLACEHOLDER.test(raw.FLASH_NETWORK) ? raw.FLASH_NETWORK : "unconfirmed",
     },

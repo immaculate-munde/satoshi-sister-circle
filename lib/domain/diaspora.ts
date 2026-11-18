@@ -2,7 +2,9 @@ import { many, one } from "../db";
 import { bps, convertFiatMinor, divRoundHalfUp, parseDecimal } from "../money";
 import { displayStatus, requireMember } from "./chamas";
 import { type Ctx, DomainError } from "./context";
+import { config } from "../config";
 import { DEMO_FX_SOURCE, DEMO_RATES } from "./fx";
+import { readCachedRate } from "./live-rates";
 import { requestInvoice } from "./invoices";
 import { REMITTANCE_BENCHMARK } from "./receipts";
 import type { ContributionRow, CycleRow, MemberRow } from "./rows";
@@ -33,14 +35,14 @@ export function feeComparison(gbpMinor: bigint) {
   };
 }
 
-export function getDiasporaContext(ctx: Ctx, groupId: string, userId: string) {
-  const { group } = requireMember(ctx.db, groupId, userId);
-  const cycle = one<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE group_id = :g ORDER BY round_number DESC LIMIT 1", { g: groupId })!;
+export async function getDiasporaContext(ctx: Ctx, groupId: string, userId: string) {
+  const { group } = await requireMember(ctx.db, groupId, userId);
+  const cycle = await (await one<CycleRow>(ctx.db, "SELECT * FROM cycles WHERE group_id = :g ORDER BY round_number DESC LIMIT 1", { g: groupId }))!;
   const members = new Map(
-    many<MemberRow>(ctx.db, "SELECT * FROM members WHERE group_id = :g", { g: groupId }).map((m) => [m.id, m]),
+    await (await many<MemberRow>(ctx.db, "SELECT * FROM members WHERE group_id = :g", { g: groupId })).map((m) => [m.id, m]),
   );
   const now = ctx.now();
-  const obligations = many<ContributionRow>(ctx.db, "SELECT * FROM contributions WHERE cycle_id = :c", { c: cycle.id })
+  const obligations = await (await many<ContributionRow>(ctx.db, "SELECT * FROM contributions WHERE cycle_id = :c", { c: cycle.id }))
     .map((c) => ({
       contributionId: c.id,
       memberId: c.member_id,
@@ -52,7 +54,9 @@ export function getDiasporaContext(ctx: Ctx, groupId: string, userId: string) {
     }))
     .sort((a, b) => a.position - b.position);
   const kes = BigInt(group.contribution_kes_minor);
-  const gbp = gbpMinorForKes(kes);
+  const live = config().fxProvider === "live" ? await readCachedRate(ctx.db, "GBP/KES", now) : undefined;
+  const gbpKes = live?.rate_decimal ?? DEMO_RATES.GBP_KES;
+  const gbp = gbpMinorForKes(kes, gbpKes);
   return {
     groupId,
     groupName: group.name,
@@ -60,12 +64,12 @@ export function getDiasporaContext(ctx: Ctx, groupId: string, userId: string) {
     roundOpen: cycle.status === "OPEN",
     settlementAsset: group.settlement_asset,
     obligations,
-    quote: { gbpMinor: gbp.toString(), kesMinor: kes.toString(), rate: DEMO_RATES.GBP_KES, mode: "DEMO", source: DEMO_FX_SOURCE },
+    quote: { gbpMinor: gbp.toString(), kesMinor: kes.toString(), rate: gbpKes, mode: live ? "LIVE" : "DEMO", source: live ? live.source : DEMO_FX_SOURCE },
     comparison: feeComparison(gbp),
     unavailableLegs: [
       "No GBP card or bank on-ramp is integrated: Njeri pays the Lightning invoice from her own wallet.",
       "No M-Pesa or KES bank cash-out: the recipient receives Bitcoin or Flash USD-stable value.",
-      "GBP/KES rate is an illustrative demo rate, not a live quote.",
+      live ? "GBP/KES is a mid-market reference rate, not a bank or on-ramp quote." : "GBP/KES rate is an illustrative demo rate, not a live quote.",
     ],
   };
 }
@@ -75,7 +79,7 @@ export async function createDiasporaInvoice(ctx: Ctx, input: { userId: string; g
   const payerCity = input.payerCity.trim();
   if (payerName.length < 1 || payerName.length > 40) throw new DomainError("INVALID_PAYER", "Enter the payer's name");
   if (payerCity.length > 40) throw new DomainError("INVALID_PAYER", "City is too long");
-  const { group } = requireMember(ctx.db, input.groupId, input.userId);
+  const { group } = await requireMember(ctx.db, input.groupId, input.userId);
   const gbp = gbpMinorForKes(BigInt(group.contribution_kes_minor));
   return requestInvoice(ctx, {
     userId: input.userId,
