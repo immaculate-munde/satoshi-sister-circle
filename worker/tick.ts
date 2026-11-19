@@ -32,7 +32,8 @@ export async function runTick(ctx: Ctx, workerId: string, opts: { reconcileInvoi
   await run(
     ctx.db,
     `INSERT INTO worker_heartbeats (worker_id, last_beat_at, last_reconcile_at, info) VALUES (:w, :now, :rec, :info)
-     ON CONFLICT(worker_id) DO UPDATE SET last_beat_at = :now, last_reconcile_at = COALESCE(:rec, last_reconcile_at), info = :info`,
+     ON CONFLICT(worker_id) DO UPDATE SET last_beat_at = EXCLUDED.last_beat_at,
+       last_reconcile_at = COALESCE(EXCLUDED.last_reconcile_at, worker_heartbeats.last_reconcile_at), info = EXCLUDED.info`,
     {
       w: workerId,
       now: nowIso(ctx.now()),

@@ -31,7 +31,7 @@ function Prims({ prims }: { prims: Prim[] }) {
 }
 
 /** Wing + Lightning coin. Placeholder until the original Figma export lands in public/brand. */
-export function Logo({ size = 96, title = "Chama on Lightning" }: { size?: number; title?: string }) {
+export function Logo({ size = 96, title = "Key-ching" }: { size?: number; title?: string }) {
   return (
     <svg width={size} height={(size * 80) / 120} viewBox="0 0 120 80" role="img" aria-label={title}>
       <Prims prims={LOGO_ART} />

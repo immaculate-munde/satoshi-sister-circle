@@ -17,6 +17,7 @@
   --color-danger-wash: #fdecea;
   --color-warn-wash: #fff4e0;
 
+  --font-display: var(--font-lobster), "Brush Script MT", cursive;
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --radius-card: 22px;

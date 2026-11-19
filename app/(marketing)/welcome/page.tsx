@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { LandingHeroArt, Logo } from "@/components/art";
@@ -23,11 +24,41 @@ const SERVICES: { title: MessageKey; body: MessageKey; icon: ReactNode }[] = [
   { title: "landing.feature.abroad.title", body: "landing.feature.abroad.body", icon: <FeatureIconAbroad /> },
 ];
 
-const STEPS: { title: MessageKey; body: MessageKey; tone: "btc" | "money" | "forest" }[] = [
-  { title: "landing.how.1.title", body: "landing.how.1.body", tone: "btc" },
-  { title: "landing.how.2.title", body: "landing.how.2.body", tone: "money" },
-  { title: "landing.how.3.title", body: "landing.how.3.body", tone: "forest" },
+/** Three staggered cards: each has a coloured tab, its text, and a photo (Pexels, see public/images/landing/CREDITS.md). */
+const STEPS: { title: MessageKey; body: MessageKey; card: string; img: string; alt: string }[] = [
+  {
+    title: "landing.how.1.title",
+    body: "landing.how.1.body",
+    card: "bg-sage",
+    img: "/images/landing/step-phone.jpg",
+    alt: "A woman in Accra checks her phone outdoors",
+  },
+  {
+    title: "landing.how.2.title",
+    body: "landing.how.2.body",
+    card: "bg-white",
+    img: "/images/landing/step-market.jpg",
+    alt: "Two market women selling flour at their stall",
+  },
+  {
+    title: "landing.how.3.title",
+    body: "landing.how.3.body",
+    card: "bg-[#fbe3c0]",
+    img: "/images/landing/step-mother.jpg",
+    alt: "A smiling mother in Nigerian attire holding her baby",
+  },
 ];
+
+/** Small orange Lightning coin, the playful accent used where the reference design has an illustration. */
+function CoinMark({ className = "" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 120 120" aria-hidden>
+      <circle cx="60" cy="60" r="52" fill="#f7931a" />
+      <circle cx="60" cy="60" r="40" fill="none" stroke="#0a3d2e" strokeWidth="4" strokeDasharray="2 9" strokeLinecap="round" />
+      <path d="M66 22 38 66h20l-6 32 30-46H62z" fill="#fff6e0" stroke="#0a3d2e" strokeWidth="3.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 function Landing() {
   const t = useT();
@@ -65,160 +96,201 @@ function Landing() {
     }
   }
 
+  const links = [
+    { href: "#how", label: t("landing.nav.how") },
+    { href: "#features", label: t("landing.nav.features") },
+    { href: "#stories", label: t("landing.nav.stories") },
+  ];
+
   return (
     <>
-      <div className="brand-page min-h-dvh pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        <header className="brand-shell flex items-center justify-between gap-4 py-5 sm:py-7">
-          <a href="#top" className="flex items-center gap-2.5" aria-label={`${t("app.name")} ${t("app.on")}`}>
-            <Logo size={44} />
-            <span className="text-[20px] font-extrabold tracking-tight text-forest">
-              {t("app.name")}
-              <span className="ml-1 font-semibold text-btc">{t("app.on")}</span>
-            </span>
-          </a>
+      <div className="min-h-dvh bg-paper pb-[env(safe-area-inset-bottom)] text-ink">
+        {/* ───────────── Hero: full-bleed photo, giant script headline, floating pill nav ───────────── */}
+        <section id="top" className="relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-forest">
+          <Image
+            src="/images/landing/hero-market.jpg"
+            alt="Two women trading at a busy market in warm afternoon light"
+            fill
+            priority
+            sizes="100vw"
+            className="-z-20 object-cover object-[60%_center]"
+          />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-forest/90 via-forest/55 to-forest/10" aria-hidden />
+          <div className="absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-gradient-to-t from-forest/70 to-transparent" aria-hidden />
 
-          <nav className="hidden items-center gap-8 text-[15px] font-semibold text-ink/80 lg:flex" aria-label={t("nav.primary")}>
-            <a href="#features" className="hover:text-money">
-              {t("landing.nav.features")}
+          <header className="relative z-20 flex items-center justify-between gap-4 px-5 pt-5 sm:px-10 sm:pt-7">
+            <a href="#top" className="flex items-center gap-2.5" aria-label={`${t("app.name")}: ${t("app.tagline")}`}>
+              <Logo size={44} />
+              <span className="text-[22px] leading-none font-extrabold tracking-tight text-white">
+                {t("app.name")}
+                <span className="mt-1 block text-[11px] font-semibold tracking-wide text-btc">{t("app.tagline")}</span>
+              </span>
             </a>
-            <a href="#how" className="hover:text-money">
-              {t("landing.nav.how")}
-            </a>
-            <a href="#stories" className="hover:text-money">
-              {t("landing.nav.stories")}
-            </a>
-            <button type="button" className="brand-btn brand-btn-outline !min-h-11 !px-5 !text-[14px]" onClick={() => start("home")} disabled={busy}>
-              {t("landing.nav.cta")}
+
+            <nav aria-label={t("nav.primary")} className="hidden items-center gap-1 rounded-full bg-white px-3 py-2 shadow-[var(--shadow-card)] md:flex">
+              {links.map((l) => (
+                <a key={l.href} href={l.href} className="rounded-full px-4 py-2 text-[15px] font-semibold text-forest hover:bg-sage">
+                  {l.label}
+                </a>
+              ))}
+              <button
+                type="button"
+                onClick={() => start("home")}
+                disabled={busy}
+                className="ml-1 rounded-full bg-money px-5 py-2 text-[15px] font-bold text-white hover:bg-forest disabled:opacity-60"
+              >
+                {t("landing.nav.cta")}
+              </button>
+            </nav>
+
+            <button
+              type="button"
+              className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-xl text-forest shadow-[var(--shadow-card)] md:hidden"
+              aria-expanded={menuOpen}
+              aria-label="Menu"
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <span aria-hidden>{menuOpen ? "×" : "☰"}</span>
             </button>
-          </nav>
+          </header>
 
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-line bg-white text-forest lg:hidden"
-            aria-expanded={menuOpen}
-            aria-label="Menu"
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            <span aria-hidden className="text-xl leading-none">
-              {menuOpen ? "×" : "☰"}
-            </span>
-          </button>
-        </header>
+          {menuOpen ? (
+            <div className="relative z-20 mx-5 mt-3 flex flex-col gap-1 rounded-3xl bg-white p-3 shadow-[var(--shadow-soft)] md:hidden">
+              {links.map((l) => (
+                <a key={l.href} href={l.href} onClick={() => setMenuOpen(false)} className="min-h-12 rounded-2xl px-4 py-3 font-semibold text-forest hover:bg-sage">
+                  {l.label}
+                </a>
+              ))}
+              <button type="button" className="brand-btn brand-btn-primary mt-1 w-full" onClick={() => start("home")} disabled={busy}>
+                {t("landing.nav.cta")}
+              </button>
+            </div>
+          ) : null}
 
-        {menuOpen ? (
-          <div className="brand-shell mb-4 flex flex-col gap-2 rounded-[28px] bg-white p-4 shadow-[var(--shadow-card)] lg:hidden">
-            <a href="#features" className="min-h-11 rounded-xl px-3 py-2 font-semibold" onClick={() => setMenuOpen(false)}>
-              {t("landing.nav.features")}
-            </a>
-            <a href="#how" className="min-h-11 rounded-xl px-3 py-2 font-semibold" onClick={() => setMenuOpen(false)}>
-              {t("landing.nav.how")}
-            </a>
-            <a href="#stories" className="min-h-11 rounded-xl px-3 py-2 font-semibold" onClick={() => setMenuOpen(false)}>
-              {t("landing.nav.stories")}
-            </a>
-            <button type="button" className="brand-btn brand-btn-primary w-full" onClick={() => start("home")} disabled={busy}>
-              {t("landing.nav.cta")}
-            </button>
-          </div>
-        ) : null}
-
-        <main id="top">
-          {/* Hero: wide art banner with a floating cream card (furniture-landing pattern) */}
-          <section className="brand-shell pb-14 lg:pb-20">
-            <div className="relative overflow-hidden rounded-[28px] bg-sage">
-              <div className="relative flex min-h-[340px] items-center justify-center px-4 pt-8 pb-40 sm:min-h-[420px] lg:min-h-[500px] lg:justify-start lg:px-16 lg:pb-8">
-                <LandingHeroArt className="brand-hero-art relative z-[1] w-full max-w-[20rem] sm:max-w-[24rem] lg:max-w-[28rem]" />
-                <div className="absolute top-[8%] left-3 z-[2] max-w-[11.5rem] rounded-2xl bg-white px-3 py-2.5 text-[12px] font-semibold text-forest shadow-[var(--shadow-card)] sm:left-8 sm:text-[13px]">
-                  <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-sage text-[11px] text-money" aria-hidden>
-                    ✓
-                  </span>
-                  {t("landing.chip.paid")}
-                </div>
-                <div className="absolute top-[26%] left-[42%] z-[2] hidden max-w-[13rem] rounded-2xl bg-white px-3 py-2.5 text-[13px] font-semibold text-forest shadow-[var(--shadow-card)] lg:block">
-                  <span className="mr-1.5 inline-block text-btc" aria-hidden>
-                    ⚡
-                  </span>
-                  {t("landing.chip.payout")}
-                </div>
-              </div>
-              <div className="animate-fade-up absolute right-4 bottom-4 left-4 z-[3] rounded-[22px] bg-cream p-6 shadow-[var(--shadow-soft)] sm:left-auto sm:max-w-md sm:p-8 lg:top-1/2 lg:right-12 lg:bottom-auto lg:-translate-y-1/2">
-                <p className="brand-kicker">{t("landing.hero.kicker")}</p>
-                <h1 className="mt-2 text-[1.8rem] leading-[1.12] font-extrabold tracking-tight text-forest sm:text-[2.2rem]">
-                  {t("landing.hero.title")}
-                </h1>
-                <p className="mt-3 text-[14px] leading-relaxed text-ink/80 sm:text-[15px]">{t("landing.hero.body")}</p>
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                  <button type="button" className="brand-btn brand-btn-primary sm:flex-1" onClick={() => start("home")} disabled={busy}>
-                    {busy && after === "home" ? t("common.loading") : t("welcome.getStarted")}
-                  </button>
-                  <button type="button" className="brand-btn brand-btn-outline sm:flex-1" onClick={() => start("invite")} disabled={busy}>
-                    {t("welcome.haveInvite")}
-                  </button>
-                </div>
+          <div className="relative z-10 flex flex-1 flex-col justify-end px-5 pt-10 pb-14 sm:px-10 sm:pb-20 lg:justify-center lg:pb-10">
+            <div className="animate-fade-up max-w-4xl">
+              <p className="mb-3 inline-block rounded-full bg-white/15 px-4 py-1.5 text-[13px] font-bold tracking-wide text-cream uppercase backdrop-blur">
+                {t("landing.hero.kicker")}
+              </p>
+              <h1 className="font-display text-[3.4rem] leading-[0.98] text-cream drop-shadow-[0_4px_18px_rgba(0,0,0,0.35)] sm:text-[5.2rem] lg:text-[7rem]">
+                {t("landing.hero.title")}
+                <CoinMark className="ml-3 inline-block h-[0.8em] w-[0.8em] -translate-y-[0.08em] rotate-[14deg] align-middle" />
+              </h1>
+              <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-white/90 sm:text-[19px]">{t("landing.hero.body")}</p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => start("home")}
+                  disabled={busy}
+                  className="inline-flex min-h-14 items-center justify-center rounded-full bg-sage px-8 text-[16px] font-bold text-forest transition hover:bg-white disabled:opacity-60"
+                >
+                  {busy && after === "home" ? t("common.loading") : t("welcome.getStarted")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => start("invite")}
+                  disabled={busy}
+                  className="inline-flex min-h-14 items-center justify-center rounded-full border-2 border-white/80 px-8 text-[16px] font-bold text-white transition hover:bg-white/15 disabled:opacity-60"
+                >
+                  {t("welcome.haveInvite")}
+                </button>
               </div>
             </div>
-          </section>
 
-          {/* Browse the range: three tall cards with labels underneath (our 3 steps) */}
-          <section id="how" className="brand-shell scroll-mt-24 py-12 text-center sm:py-16">
-            <h2 className="text-[1.6rem] font-extrabold tracking-tight text-forest sm:text-[2rem]">{t("landing.how.title")}</h2>
-            <p className="brand-kicker mt-2">{t("landing.how.kicker")}</p>
-            <ol className="mx-auto mt-10 grid max-w-4xl gap-6 sm:grid-cols-3">
-              {STEPS.map((step, i) => (
-                <li key={step.title}>
-                  <div
-                    className={`flex h-72 flex-col items-center justify-center rounded-2xl px-5 text-center sm:h-80 ${
-                      step.tone === "btc" ? "bg-cream" : step.tone === "money" ? "bg-sage" : "bg-forest"
-                    }`}
-                  >
-                    <span
-                      className={`text-[5rem] leading-none font-extrabold ${step.tone === "forest" ? "text-btc" : step.tone === "btc" ? "text-btc" : "text-money"}`}
-                    >
-                      {i + 1}
-                    </span>
-                    <p className={`mt-4 text-[13.5px] leading-relaxed ${step.tone === "forest" ? "text-cream/90" : "text-ink/75"}`}>{t(step.body)}</p>
+            <div className="absolute right-5 bottom-6 hidden max-w-[15rem] flex-col gap-2 text-[13px] font-semibold text-forest sm:right-10 lg:flex">
+              <span className="rounded-2xl bg-white px-4 py-3 shadow-[var(--shadow-card)]">
+                <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-sage text-[11px] text-money" aria-hidden>
+                  ✓
+                </span>
+                {t("landing.chip.paid")}
+              </span>
+              <span className="rounded-2xl bg-white px-4 py-3 shadow-[var(--shadow-card)]">
+                <span className="mr-2 text-btc" aria-hidden>
+                  ⚡
+                </span>
+                {t("landing.chip.payout")}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* ───────────── Split: photo left, centred story right ───────────── */}
+        <section className="mx-auto grid w-[min(100%-2.5rem,80rem)] items-center gap-10 py-16 sm:py-24 lg:grid-cols-[1fr_1fr] lg:gap-20">
+          <div className="relative mx-auto aspect-[4/5] w-full max-w-xl overflow-hidden rounded-[28px] shadow-[var(--shadow-soft)]">
+            <Image
+              src="/images/landing/three-friends.jpg"
+              alt="Three young women laughing together, wrapped in colourful fabric"
+              fill
+              sizes="(min-width: 1024px) 40vw, 90vw"
+              className="object-cover"
+            />
+          </div>
+          <div className="mx-auto max-w-lg text-center">
+            <CoinMark className="mx-auto h-24 w-24 -rotate-6" />
+            <h2 className="mt-6 text-[2.1rem] leading-tight font-extrabold tracking-tight text-forest sm:text-[2.8rem]">
+              {t("welcome.title")}
+            </h2>
+            <p className="mt-6 text-[16px] leading-relaxed text-ink/80 sm:text-[18px]">{t("welcome.body")}</p>
+            <p className="mt-6 text-[17px] font-bold text-money">{t("app.tagline")}</p>
+          </div>
+        </section>
+
+        {/* ───────────── Steps: staggered tabbed cards on warm cream ───────────── */}
+        <section id="how" className="scroll-mt-6 bg-[#f4ead3] py-16 sm:py-24">
+          <div className="mx-auto w-[min(100%-2.5rem,80rem)]">
+            <div className="flex items-start justify-between gap-6">
+              <div className="max-w-xl">
+                <p className="brand-kicker">{t("landing.how.kicker")}</p>
+                <h2 className="mt-2 text-[2.2rem] leading-[1.08] font-extrabold tracking-tight text-forest sm:text-[3.2rem]">
+                  {t("landing.how.title")}
+                </h2>
+              </div>
+              <svg className="hidden h-28 w-32 shrink-0 sm:block" viewBox="0 0 140 120" aria-hidden>
+                <ellipse cx="68" cy="60" rx="46" ry="42" fill="#0f6b4c" />
+                <ellipse cx="68" cy="60" rx="64" ry="14" fill="none" stroke="#f7931a" strokeWidth="8" transform="rotate(-18 68 60)" />
+                <path d="M62 36 48 62h12l-4 20 20-28H64z" fill="#fff6e0" />
+              </svg>
+            </div>
+
+            <ol className="mt-12 grid items-start gap-10 lg:grid-cols-3 lg:gap-6">
+              {STEPS.map((s, i) => (
+                <li key={s.title} className={i === 0 ? "lg:mt-44" : i === 1 ? "lg:mt-24" : ""}>
+                  <h3 className={`inline-block rounded-t-2xl px-5 pt-3 pb-3 text-[18px] font-extrabold text-forest ${s.card}`}>
+                    {i + 1}. {t(s.title)}
+                  </h3>
+                  <div className={`rounded-b-[26px] rounded-tr-[26px] p-5 ${s.card}`}>
+                    <p className="text-[15px] leading-relaxed text-ink/85">{t(s.body)}</p>
+                    <div className="relative mt-5 aspect-[4/3] overflow-hidden rounded-2xl">
+                      <Image src={s.img} alt={s.alt} fill sizes="(min-width: 1024px) 28vw, 90vw" className="object-cover" />
+                    </div>
                   </div>
-                  <h3 className="mt-4 text-[16px] font-bold text-forest">{t(step.title)}</h3>
                 </li>
               ))}
             </ol>
-          </section>
+          </div>
+        </section>
 
-          {/* Features: product-style grid with hover overlay */}
-          <section id="features" className="brand-shell scroll-mt-24 py-12 sm:py-16">
-            <div className="mx-auto max-w-2xl text-center">
-              <h2 className="text-[1.6rem] font-extrabold tracking-tight text-forest sm:text-[2rem]">{t("landing.features.title")}</h2>
-              <p className="brand-kicker mt-2">{t("landing.features.kicker")}</p>
-            </div>
-            <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {SERVICES.map((s) => (
-                <li key={s.title} className="group overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-card)]">
-                  <div className="relative flex h-44 items-center justify-center bg-paper">
-                    <div className="flex h-16 w-16 items-center justify-center">{s.icon}</div>
-                    <div className="absolute inset-0 flex items-center justify-center bg-forest/75 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                      <button
-                        type="button"
-                        className="rounded-md bg-white px-4 py-2 text-[13px] font-bold text-forest"
-                        onClick={() => start("home")}
-                        disabled={busy}
-                      >
-                        {t("welcome.getStarted")}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-[15px] font-bold text-forest">{t(s.title)}</h3>
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{t(s.body)}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
+        {/* ───────────── Features ───────────── */}
+        <section id="features" className="mx-auto w-[min(100%-2.5rem,80rem)] scroll-mt-6 py-16 sm:py-24">
+          <h2 className="mx-auto max-w-2xl text-center text-[2.1rem] leading-tight font-extrabold tracking-tight text-forest sm:text-[2.9rem]">
+            {t("landing.features.title")}
+          </h2>
+          <ul className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {SERVICES.map((s) => (
+              <li key={s.title} className="rounded-[26px] bg-white p-7 shadow-[var(--shadow-card)]">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-sage">{s.icon}</div>
+                <h3 className="mt-5 text-[18px] font-extrabold text-forest">{t(s.title)}</h3>
+                <p className="mt-2 text-[14.5px] leading-relaxed text-muted">{t(s.body)}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-          {/* Live preview card */}
-          <section className="brand-shell py-10 lg:py-14">
+        {/* ───────────── Live preview of a round ───────────── */}
+        <section className="mx-auto grid w-[min(100%-2.5rem,80rem)] items-center gap-10 pb-16 sm:pb-24 lg:grid-cols-2 lg:gap-16">
+          <div className="order-2 lg:order-1">
             <div className="relative mx-auto w-full max-w-md">
-              <div className="brand-soft-card relative z-[1] p-6">
+              <div className="brand-soft-card relative z-[1] p-6 pb-16">
                 <div className="flex items-center gap-3">
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sage text-lg font-extrabold text-money">U</span>
                   <div>
@@ -244,67 +316,93 @@ function Landing() {
                 </div>
               </div>
             </div>
-          </section>
+          </div>
+          <div className="order-1 flex justify-center lg:order-2">
+            <LandingHeroArt className="w-full max-w-[22rem] sm:max-w-[26rem]" />
+          </div>
+        </section>
 
-          {/* Honest custody note (no testimonials until real ones exist) */}
-          <section id="stories" className="brand-shell scroll-mt-24 py-20">
-            <div className="mx-auto max-w-3xl text-center">
-              <p className="brand-kicker">{t("landing.nav.stories")}</p>
-              <blockquote className="mt-6 text-[1.15rem] leading-snug font-semibold text-forest sm:text-[1.4rem]">{t("landing.quote")}</blockquote>
-              <p className="mt-5 text-[15px] font-bold text-btc">{t("landing.quote.by")}</p>
-            </div>
-          </section>
+        {/* ───────────── Photo band with the honest custody note ───────────── */}
+        <section id="stories" className="relative isolate flex min-h-[26rem] scroll-mt-6 items-center justify-center overflow-hidden bg-forest px-6 py-20">
+          <Image
+            src="/images/landing/band-meeting.jpg"
+            alt="Women of a savings circle meeting around a table"
+            fill
+            sizes="100vw"
+            className="-z-20 object-cover"
+          />
+          <div className="absolute inset-0 -z-10 bg-forest/80" aria-hidden />
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-[14px] font-bold tracking-widest text-btc uppercase">{t("landing.nav.stories")}</p>
+            <blockquote className="mt-5 text-[1.35rem] leading-snug font-bold text-white sm:text-[1.9rem]">{t("landing.quote")}</blockquote>
+            <p className="mt-5 text-[16px] font-bold text-cream">{t("landing.quote.by")}</p>
+          </div>
+        </section>
 
-          {/* Soft CTA banner */}
-          <section className="brand-shell pb-16 sm:pb-20">
-            <div className="relative overflow-hidden rounded-[32px] bg-sage px-6 py-10 sm:px-12 sm:py-14">
-              <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-btc/20" aria-hidden />
-              <div className="absolute -bottom-12 -left-8 h-36 w-36 rounded-full bg-money/15" aria-hidden />
-              <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div className="max-w-xl">
-                  <h2 className="text-[1.75rem] font-extrabold tracking-tight text-forest sm:text-[2.25rem]">{t("landing.banner.title")}</h2>
-                  <p className="mt-3 text-[15px] leading-relaxed text-muted sm:text-[16px]">{t("landing.banner.body")}</p>
-                </div>
-                <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-                  <button type="button" className="brand-btn brand-btn-primary" onClick={() => start("home")} disabled={busy}>
-                    {t("welcome.getStarted")}
-                  </button>
-                  <button type="button" className="brand-btn brand-btn-outline" onClick={() => start("invite")} disabled={busy}>
-                    {t("welcome.haveInvite")}
-                  </button>
-                </div>
-              </div>
+        {/* ───────────── Closing call to action over a street photo ───────────── */}
+        <section className="relative isolate flex min-h-[28rem] items-center justify-center overflow-hidden bg-forest px-6 py-20">
+          <Image
+            src="/images/landing/cta-street.jpg"
+            alt="Neighbours gathered at a roadside fruit stall"
+            fill
+            sizes="100vw"
+            className="-z-20 object-cover object-[center_75%]"
+          />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-forest/85 to-[#06271d]/90" aria-hidden />
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="font-display text-[2.8rem] leading-tight text-cream sm:text-[4rem]">{t("landing.banner.title")}</h2>
+            <p className="mt-4 text-[17px] leading-relaxed text-white/90">{t("landing.banner.body")}</p>
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => start("home")}
+                disabled={busy}
+                className="inline-flex min-h-14 items-center justify-center rounded-full bg-sage px-8 text-[16px] font-bold text-forest transition hover:bg-white disabled:opacity-60"
+              >
+                {t("welcome.getStarted")}
+              </button>
+              <button
+                type="button"
+                onClick={() => start("invite")}
+                disabled={busy}
+                className="inline-flex min-h-14 items-center justify-center rounded-full border-2 border-white/80 px-8 text-[16px] font-bold text-white transition hover:bg-white/15 disabled:opacity-60"
+              >
+                {t("welcome.haveInvite")}
+              </button>
             </div>
-          </section>
-        </main>
+          </div>
+        </section>
 
-        <footer className="border-t border-line bg-paper">
-          <div className="brand-shell grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="lg:col-span-2">
-              <p className="text-[18px] font-extrabold text-forest">
-                {t("app.name")} <span className="text-btc">{t("app.on")}</span>
-              </p>
-              <p className="mt-3 max-w-md text-[13px] leading-relaxed text-muted">{t("welcome.custody")}</p>
+        {/* ───────────── Footer ───────────── */}
+        <footer className="bg-paper">
+          <div className="mx-auto w-[min(100%-2.5rem,80rem)] py-14 sm:py-20">
+            <div className="flex items-center gap-4">
+              <Logo size={64} />
+              <span className="font-display text-[2.4rem] text-forest sm:text-[3rem]">
+                {t("app.name")}
+              </span>
             </div>
-            <div>
-              <p className="text-[13px] font-bold tracking-wide text-forest uppercase">{t("landing.nav.features")}</p>
-              <ul className="mt-3 space-y-2 text-[14px] text-muted">
-                <li>
-                  <a href="#features" className="hover:text-money">
-                    {t("landing.feature.ledger.title")}
-                  </a>
-                </li>
-                <li>
-                  <a href="#how" className="hover:text-money">
-                    {t("landing.nav.how")}
-                  </a>
-                </li>
+            <div className="mt-12 grid gap-10 text-[15px] text-ink/80 sm:grid-cols-2 lg:grid-cols-[1.2fr_0.7fr_1.4fr_0.8fr]">
+              <p className="max-w-xs text-[17px] font-bold text-money">{t("app.tagline")}</p>
+              <ul className="space-y-2 font-semibold">
+                {links.map((l) => (
+                  <li key={l.href}>
+                    <a href={l.href} className="hover:text-money">
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
               </ul>
+              <p className="max-w-md leading-relaxed">{t("welcome.custody")}</p>
+              <p className="font-semibold text-forest">{t("landing.footer.rights")}</p>
             </div>
-            <div>
-              <p className="text-[13px] font-bold tracking-wide text-forest uppercase">{t("landing.footer.rights")}</p>
-              <p className="mt-3 text-[13px] text-muted">{t("app.tagline")}</p>
-            </div>
+            <p className="mt-14 text-[13px] text-muted">
+              © {new Date().getFullYear()} {t("app.name")}. Photos from{" "}
+              <a href="https://www.pexels.com" className="underline underline-offset-2 hover:text-money" target="_blank" rel="noreferrer">
+                Pexels
+              </a>
+              .
+            </p>
           </div>
         </footer>
       </div>

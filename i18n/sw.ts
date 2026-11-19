@@ -2,9 +2,8 @@ import type { en } from "./en";
 
 // Swahili catalog. Please have a native speaker review before public use.
 export const sw: Record<keyof typeof en, string> = {
-  "app.name": "Chama",
-  "app.on": "kwenye Lightning",
-  "app.tagline": "Wekeni akiba pamoja. Malipo kwa wakati.",
+  "app.name": "Key-ching",
+  "app.tagline": "Chama chako kwenye Lightning",
   "mode.demo": "Hali ya majaribio · malipo ya kuigiza · hakuna pesa halisi",
   "mode.flash": "Mtandao wa majaribio wa Flash · pesa za majaribio tu",
   "offline": "Huna mtandao. Unaona data ya mwisho, kusoma tu. Malipo yanahitaji mtandao.",
@@ -83,7 +82,7 @@ export const sw: Record<keyof typeof en, string> = {
   "landing.features.kicker": "AINA",
   "landing.features.title": "Tunatoa kile kikundi chako kinachohitaji",
   "landing.quote":
-    "Fedha hukaa kwa mtoa huduma wa Lightning anayezishikilia wakati mzunguko unajazwa. Chama on Lightning hutekeleza malipo mliyokubaliana, lakini si uhifadhi wako mwenyewe. Anza na kiasi unachostarehe nacho.",
+    "Fedha hukaa kwa mtoa huduma wa Lightning anayezishikilia wakati mzunguko unajazwa. Key-ching hutekeleza malipo mliyokubaliana, lakini si uhifadhi wako mwenyewe. Anza na kiasi unachostarehe nacho.",
   "landing.quote.by": "Uwe wazi kuhusu uhifadhi",
   "landing.preview.round": "Mzunguko huu",
   "landing.preview.paid": "{paid} kati ya {total} wamelipa",
@@ -107,7 +106,7 @@ export const sw: Record<keyof typeof en, string> = {
   "landing.how.3.body": "Wote wakishalipa, mwanachama aliyekubaliwa anapokea mfuko. Risiti zinaweka rekodi wazi.",
   "landing.banner.title": "Uko tayari kuhamisha chama chako kwenye Lightning?",
   "landing.banner.body": "Anza kikundi na dada zako, au jiunge na kilicho na nafasi ikikungoja.",
-  "landing.footer.rights": "Chama kwenye Lightning",
+  "landing.footer.rights": "Key-ching",
   "signin.title": "Nani anaweka akiba leo?",
   "signin.demoHint": "Wahusika wa majaribio: badilisha kati ya wanachama kucheza nafasi ya kila mmoja.",
   "signin.newName": "Au jiunge kama mtu mpya",

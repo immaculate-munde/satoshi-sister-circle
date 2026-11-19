@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Lobster, Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
 import { AppProviders, type Locale } from "@/components/providers";
 import { OfflineBanner } from "@/components/ui";
@@ -15,11 +15,19 @@ const jakarta = Plus_Jakarta_Sans({
   fallback: ["system-ui", "sans-serif"],
 });
 
+const lobster = Lobster({
+  variable: "--font-lobster",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+  fallback: ["cursive"],
+});
+
 export const metadata: Metadata = {
-  title: "Chama on Lightning",
+  title: "Key-ching: Your chama on Lightning",
   description: "Save together. Paid out on time. A rotating savings circle on Bitcoin Lightning.",
-  applicationName: "Chama on Lightning",
-  appleWebApp: { capable: true, title: "Chama", statusBarStyle: "default" },
+  applicationName: "Key-ching",
+  appleWebApp: { capable: true, title: "Key-ching", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -36,7 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale: Locale = cookieLocale === "sw" || cookieLocale === "en" ? cookieLocale : process.env.NEXT_PUBLIC_DEFAULT_LOCALE === "sw" ? "sw" : "en";
   const mode = { provider: cfg.mode, simulatedPayments: cfg.allowSimulatedPayments, network: (await getProvider()).network };
   return (
-    <html lang={locale} className={`${jakarta.variable} h-full antialiased`}>
+    <html lang={locale} className={`${jakarta.variable} ${lobster.variable} h-full antialiased`}>
       <body className="min-h-dvh">
         <AppProviders initialLocale={locale} mode={mode}>
           <div className="safe-top flex min-h-dvh w-full flex-col">

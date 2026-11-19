@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Chama on Lightning",
-    short_name: "Chama",
-    description: "Save together. Paid out on time.",
+    name: "Key-ching",
+    short_name: "Key-ching",
+    description: "Your chama on Lightning. Save together, paid out on time.",
     start_url: "/home",
     display: "standalone",
     background_color: "#F7FAF8",

@@ -1,4 +1,6 @@
-# Chama on Lightning
+# Key-ching
+
+_Your chama on Lightning._
 
 **Three women, one pot, no notebook.** A mobile-first PWA for rotating savings circles (chamas) settled over
 Bitcoin Lightning through Flash. Members agree an amount, a cadence and a payout order; each member pays a
