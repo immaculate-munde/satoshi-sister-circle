@@ -20,6 +20,8 @@ export interface CreateChamaInput {
   customIntervalDays?: number;
   settlementAsset: Asset;
   firstDueDate: string; // YYYY-MM-DD in EAT
+  visibility?: "PRIVATE" | "PUBLIC";
+  description?: string;
   members: { displayName: string; isMe: boolean; payoutPreference: "BTC" | "USD"; destinationRef?: string }[];
 }
 
@@ -161,8 +163,8 @@ export async function createChama(ctx: Ctx, userId: string, input: CreateChamaIn
     await run(
       ctx.db,
       `INSERT INTO groups (id, number, name, owner_user_id, contribution_kes_minor, settlement_asset, frequency,
-         custom_interval_days, first_due_at, provider, provider_account_ref, created_at)
-       VALUES (:id, :num, :name, :owner, :amt, :asset, :freq, :custom, :first, :provider, :acct, :now)`,
+         custom_interval_days, first_due_at, provider, provider_account_ref, visibility, description, created_at)
+       VALUES (:id, :num, :name, :owner, :amt, :asset, :freq, :custom, :first, :provider, :acct, :vis, :desc, :now)`,
       {
         id: groupId,
         num: number,
@@ -175,6 +177,8 @@ export async function createChama(ctx: Ctx, userId: string, input: CreateChamaIn
         first: firstDue.toISOString(),
         provider: ctx.provider.name,
         acct: providerAccountRef,
+        vis: input.visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
+        desc: input.description?.trim() ? input.description.trim().slice(0, 500) : null,
         now: now.toISOString(),
       },
     );

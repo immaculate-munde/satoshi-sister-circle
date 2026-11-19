@@ -15,6 +15,8 @@ const createSchema = z.object({
   customIntervalDays: z.number().int().min(1).max(365).optional(),
   settlementAsset: z.enum(["BTC_SAT", "USD_CENT"]),
   firstDueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  visibility: z.enum(["PRIVATE", "PUBLIC"]).optional(),
+  description: z.string().trim().max(500).optional(),
   members: z
     .array(
       z.object({
