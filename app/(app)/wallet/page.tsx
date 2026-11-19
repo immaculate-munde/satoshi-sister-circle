@@ -51,8 +51,8 @@ export default function WalletPage() {
     <div className="flex flex-1 flex-col">
       {/* Balance header */}
       <header className="relative overflow-hidden bg-forest px-5 pb-14 pt-5 text-white">
-        <div className="absolute -top-8 -right-6 h-36 w-36 rounded-full bg-btc/25" aria-hidden />
-        <div className="absolute -bottom-10 -left-8 h-32 w-32 rounded-full bg-white/10" aria-hidden />
+        <div className="absolute -top-8 -right-6 h-36 w-36 rounded-full bg-pink/40" aria-hidden />
+        <div className="absolute -bottom-10 -left-8 h-32 w-32 rounded-full bg-btc/30" aria-hidden />
         <div className="relative flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-medium text-cream/80">{t("home.greeting", { name: user.displayName.split(" ")[0] })}</p>
@@ -69,7 +69,7 @@ export default function WalletPage() {
             {units(totals.btcSats, "BTC_SAT")}
             {totals.usdCents !== "0" ? ` · ${units(totals.usdCents, "USD_CENT")}` : ""}
           </p>
-          <p className="mt-3 text-[12px] text-btc">{t("wallet.balanceHint")}</p>
+          <p className="mt-3 text-[12px] font-semibold text-pink">{t("wallet.balanceHint")}</p>
         </div>
       </header>
 
@@ -189,7 +189,7 @@ export default function WalletPage() {
                         href={`/chamas/${c.id}/contribute`}
                         className="flex min-h-16 items-center gap-3 rounded-[22px] bg-white px-4 py-3 shadow-[var(--shadow-card)]"
                       >
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sage text-base font-extrabold text-money">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-money text-base font-extrabold text-white">
                           {c.name[0]}
                         </span>
                         <span className="min-w-0 flex-1">

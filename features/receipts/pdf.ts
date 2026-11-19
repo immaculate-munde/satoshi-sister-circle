@@ -61,7 +61,7 @@ export async function renderReceiptPdf(s: ReceiptSnapshot, contentHash: string):
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const oblique = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
-  const paper = hex("#F7FAF8");
+  const paper = hex("#FFF7FB");
   page.drawRectangle({ x: 0, y: 0, width: W, height: H, color: paper });
 
   // Ticket body with scalloped edges (bites punched out in paper colour).

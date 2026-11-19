@@ -54,9 +54,9 @@ export default function ResetPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-forest px-6 text-white">
-      <div className="w-full max-w-sm">
-        <h1 className="text-[1.9rem] font-extrabold">{t("auth.reset.title")}</h1>
+    <div className="flex min-h-dvh items-center justify-center bg-paper px-6">
+      <div className="w-full max-w-sm rounded-[28px] bg-white p-7 shadow-[var(--shadow-card)]">
+        <h1 className="text-[1.9rem] font-extrabold text-forest">{t("auth.reset.title")}</h1>
         {error ? (
           <p role="alert" className="mt-5 rounded-xl bg-danger-wash px-4 py-3 text-[14px] font-medium text-danger">
             {error}
@@ -65,10 +65,10 @@ export default function ResetPage() {
         {ready ? (
           <form onSubmit={save} className="mt-6 space-y-5">
             <label className="block">
-              <span className="mb-2 block text-[14px] font-semibold">{t("auth.password")}</span>
+              <span className="mb-2 block text-[14px] font-semibold text-forest">{t("auth.password")}</span>
               <input
                 type="password"
-                className="w-full min-h-[3.4rem] rounded-2xl border border-white/10 bg-white/[0.08] px-4 text-white outline-none focus:border-btc"
+                className="w-full min-h-[3.4rem] rounded-2xl border border-line bg-white px-4 text-ink outline-none focus:border-money"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={8}
@@ -77,14 +77,14 @@ export default function ResetPage() {
                 placeholder={t("auth.passwordHint")}
               />
             </label>
-            <button type="submit" disabled={busy} className="brand-btn w-full bg-btc text-forest disabled:opacity-60">
+            <button type="submit" disabled={busy} className="brand-btn brand-btn-primary w-full disabled:opacity-60">
               {busy ? t("auth.working") : t("auth.reset.save")}
             </button>
           </form>
         ) : !error ? (
-          <p className="mt-5 text-white/80">{t("auth.callback.working")}</p>
+          <p className="mt-5 text-muted">{t("auth.callback.working")}</p>
         ) : (
-          <a href="/signin" className="brand-btn mt-6 w-full bg-btc text-forest">
+          <a href="/signin" className="brand-btn brand-btn-primary mt-6 w-full">
             {t("auth.signInLink")}
           </a>
         )}

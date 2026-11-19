@@ -98,7 +98,7 @@ export function InviteFlow({ initialCode = "" }: { initialCode?: string }) {
           <legend className="mb-2 text-sm font-semibold">{t("invite.whichSeat")}</legend>
           {preview.seats.map((s) => (
             <label key={s.memberId} className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl border px-3 ${seat === s.memberId ? "border-money bg-sage" : "border-line bg-white"}`}>
-              <input type="radio" name="seat" value={s.memberId} checked={seat === s.memberId} onChange={() => setSeat(s.memberId)} className="h-5 w-5 accent-[#0F6B4C]" />
+              <input type="radio" name="seat" value={s.memberId} checked={seat === s.memberId} onChange={() => setSeat(s.memberId)} className="h-5 w-5 accent-money" />
               <MemberAvatar name={s.name} size={32} />
               <span className="flex-1 font-semibold">{s.name}</span>
               <span className="text-xs text-muted">#{s.position}</span>

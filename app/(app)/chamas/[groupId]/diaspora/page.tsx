@@ -90,7 +90,7 @@ export default function DiasporaPage() {
                     key={o.memberId}
                     className={`flex min-h-14 items-center gap-3 rounded-2xl border px-3 ${o.status === "PAID" ? "cursor-not-allowed border-line bg-white opacity-60" : selected === o.memberId ? "cursor-pointer border-money bg-sage" : "cursor-pointer border-line bg-white"}`}
                   >
-                    <input type="radio" name="member" disabled={o.status === "PAID"} checked={selected === o.memberId} onChange={() => setMemberId(o.memberId)} className="h-5 w-5 accent-[#0F6B4C]" />
+                    <input type="radio" name="member" disabled={o.status === "PAID"} checked={selected === o.memberId} onChange={() => setMemberId(o.memberId)} className="h-5 w-5 accent-money" />
                     <MemberAvatar name={o.name} size={32} />
                     <span className="flex-1 font-semibold">{o.name}</span>
                     <StatusBadge status={o.status} />

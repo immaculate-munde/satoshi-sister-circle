@@ -37,13 +37,13 @@ function Callback() {
   }, [router, t]);
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-forest px-6 text-center text-white">
+    <div className="flex min-h-dvh items-center justify-center bg-paper px-6 text-center text-forest">
       {error ? (
         <div className="max-w-sm space-y-4">
           <p role="alert" className="rounded-xl bg-danger-wash px-4 py-3 text-[14px] font-medium text-danger">
             {error}
           </p>
-          <a href="/signin" className="brand-btn bg-btc text-forest">
+          <a href="/signin" className="brand-btn brand-btn-primary">
             {t("auth.signInLink")}
           </a>
         </div>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Lobster, Plus_Jakarta_Sans } from "next/font/google";
+import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
 import { AppProviders, type Locale } from "@/components/providers";
 import { OfflineBanner } from "@/components/ui";
@@ -15,12 +15,11 @@ const jakarta = Plus_Jakarta_Sans({
   fallback: ["system-ui", "sans-serif"],
 });
 
-const lobster = Lobster({
-  variable: "--font-lobster",
-  weight: "400",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
   display: "swap",
-  fallback: ["cursive"],
+  fallback: ["system-ui", "sans-serif"],
 });
 
 export const metadata: Metadata = {
@@ -31,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0F6B4C",
+  themeColor: "#21212E",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -44,7 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale: Locale = cookieLocale === "sw" || cookieLocale === "en" ? cookieLocale : process.env.NEXT_PUBLIC_DEFAULT_LOCALE === "sw" ? "sw" : "en";
   const mode = { provider: cfg.mode, simulatedPayments: cfg.allowSimulatedPayments, network: (await getProvider()).network };
   return (
-    <html lang={locale} className={`${jakarta.variable} ${lobster.variable} h-full antialiased`}>
+    <html lang={locale} className={`${jakarta.variable} ${outfit.variable} h-full antialiased`}>
       <body className="min-h-dvh">
         <AppProviders initialLocale={locale} mode={mode}>
           <div className="safe-top flex min-h-dvh w-full flex-col">

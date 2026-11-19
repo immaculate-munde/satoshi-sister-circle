@@ -12,10 +12,11 @@ export function ChamaCard({ c }: { c: ChamaList["chamas"][number] }) {
   return (
     <Link
       href={`/chamas/${c.id}`}
-      className="block rounded-[var(--radius-card)] bg-white p-4 shadow-[var(--shadow-card)] transition-transform hover:-translate-y-0.5"
+      className="block overflow-hidden rounded-[var(--radius-card)] bg-white shadow-[var(--shadow-card)] transition-transform hover:-translate-y-0.5"
     >
-      <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sage text-lg font-extrabold text-money" aria-hidden>
+      <div className="h-1.5 bg-pink" aria-hidden />
+      <div className="flex items-start gap-3 p-4 pb-0">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-money text-lg font-extrabold text-white" aria-hidden>
           {c.name[0]}
         </div>
         <div className="min-w-0 flex-1">
@@ -26,7 +27,7 @@ export function ChamaCard({ c }: { c: ChamaList["chamas"][number] }) {
         </div>
         {c.myStatus ? <StatusBadge status={c.myStatus} /> : null}
       </div>
-      <div className="mt-4 space-y-2">
+      <div className="space-y-2 p-4">
         <ProgressPot paid={c.paidCount} total={c.totalCount} />
         <div className="flex justify-between text-[12px] text-muted">
           <span>

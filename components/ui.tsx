@@ -9,8 +9,8 @@ import { useOnline } from "@/lib/client/api";
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "orange";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-money text-white hover:bg-forest disabled:bg-muted/40",
-  secondary: "bg-white text-money border border-money/30 hover:bg-sage disabled:text-muted",
+  primary: "bg-money text-white hover:bg-money-deep disabled:bg-muted/40",
+  secondary: "bg-white text-forest border border-line hover:border-money hover:bg-sage disabled:text-muted",
   ghost: "bg-transparent text-money hover:bg-sage",
   danger: "bg-danger text-white hover:opacity-90",
   orange: "bg-btc text-forest hover:bg-warm",
@@ -53,7 +53,7 @@ export function Card({ children, className = "", as: As = "section" }: { childre
   return <As className={`rounded-[var(--radius-card)] p-4 shadow-[var(--shadow-card)] ${bg} ${className}`}>{children}</As>;
 }
 
-const AVATAR_COLORS = ["#0F6B4C", "#FF9F1C", "#0A3D2E", "#F7931A", "#5C6B64", "#2E8B6A"];
+const AVATAR_COLORS = ["#C81E78", "#FE6F01", "#21212E", "#F74A9A", "#9E145F", "#6D6573"];
 
 export function MemberAvatar({ name, size = 40, ring }: { name: string; size?: number; ring?: boolean }) {
   const initials = name

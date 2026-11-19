@@ -10,7 +10,7 @@ import { apiFetch } from "@/lib/client/api";
 import { establishAppSession, safeNext, supabase, supabaseEnabled } from "@/lib/client/supabase";
 
 const field =
-  "w-full min-h-[3.4rem] rounded-2xl border border-white/10 bg-white/[0.08] px-4 text-[15px] text-white placeholder:text-white/40 outline-none transition focus:border-btc focus:bg-white/[0.12]";
+  "w-full min-h-[3.4rem] rounded-2xl border border-line bg-white px-4 text-[15px] text-ink placeholder:text-muted/70 outline-none transition focus:border-money";
 
 function GoogleMark() {
   return (
@@ -49,7 +49,7 @@ function SignIn() {
   if (!supabaseEnabled) {
     return (
       <Shell t={t}>
-        <p className="rounded-2xl bg-white/10 p-4 text-[15px] text-white/90">{t("auth.notConfigured")}</p>
+        <p className="rounded-2xl bg-sage p-4 text-[15px] text-forest">{t("auth.notConfigured")}</p>
       </Shell>
     );
   }
@@ -125,22 +125,22 @@ function SignIn() {
 
   return (
     <Shell t={t}>
-      <h1 className="text-[2.1rem] leading-tight font-extrabold text-white">{signup ? t("auth.signup.title") : t("auth.title")}</h1>
-      <p className="mt-3 text-[15px] text-white/80">{signup ? t("auth.signup.subtitle") : t("auth.subtitle")}</p>
+      <h1 className="text-[2.4rem] leading-tight font-extrabold text-forest">{signup ? t("auth.signup.title") : t("auth.title")}</h1>
+      <p className="mt-3 text-[15px] text-muted">{signup ? t("auth.signup.subtitle") : t("auth.subtitle")}</p>
 
       <form onSubmit={submit} className="mt-8 space-y-5" noValidate={false}>
         {signup ? (
           <label className="block">
-            <span className="mb-2 block text-[14px] font-semibold text-white">{t("auth.name")}</span>
+            <span className="mb-2 block text-[14px] font-semibold text-forest">{t("auth.name")}</span>
             <input className={field} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} required autoComplete="name" />
           </label>
         ) : null}
         <label className="block">
-          <span className="mb-2 block text-[14px] font-semibold text-white">{t("auth.email")}</span>
+          <span className="mb-2 block text-[14px] font-semibold text-forest">{t("auth.email")}</span>
           <input className={field} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
         </label>
         <label className="block">
-          <span className="mb-2 block text-[14px] font-semibold text-white">{t("auth.password")}</span>
+          <span className="mb-2 block text-[14px] font-semibold text-forest">{t("auth.password")}</span>
           <span className="relative block">
             <input
               className={`${field} pr-12`}
@@ -156,7 +156,7 @@ function SignIn() {
               type="button"
               onClick={() => setShow((v) => !v)}
               aria-label={show ? t("auth.hidePassword") : t("auth.showPassword")}
-              className="absolute top-1/2 right-3 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-white/70 hover:text-white"
+              className="absolute top-1/2 right-3 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-muted hover:text-forest"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
@@ -169,7 +169,7 @@ function SignIn() {
 
         {!signup ? (
           <div className="text-right">
-            <button type="button" onClick={forgot} className="text-[14px] font-semibold text-btc hover:underline">
+            <button type="button" onClick={forgot} className="text-[14px] font-semibold text-money hover:underline">
               {t("auth.forgot")}
             </button>
           </div>
@@ -189,29 +189,29 @@ function SignIn() {
         <button
           type="submit"
           disabled={busy !== null}
-          className="brand-btn w-full bg-btc !text-[1rem] text-forest hover:brightness-105 disabled:opacity-60"
+          className="brand-btn brand-btn-primary w-full !text-[1rem] disabled:opacity-60"
         >
           {busy === "form" ? t("auth.working") : signup ? t("auth.submitSignup") : t("auth.submit")}
         </button>
       </form>
 
-      <div className="my-6 flex items-center gap-4 text-[13px] text-white/60">
-        <span className="h-px flex-1 bg-white/15" />
+      <div className="my-6 flex items-center gap-4 text-[13px] text-muted">
+        <span className="h-px flex-1 bg-line" />
         {t("auth.or")}
-        <span className="h-px flex-1 bg-white/15" />
+        <span className="h-px flex-1 bg-line" />
       </div>
 
       <button
         type="button"
         onClick={google}
         disabled={busy !== null}
-        className="brand-btn w-full gap-3 border border-white/20 bg-white text-forest hover:bg-sage disabled:opacity-60"
+        className="brand-btn brand-btn-outline w-full gap-3 disabled:opacity-60"
       >
         <GoogleMark />
         {busy === "google" ? t("auth.working") : t("auth.google")}
       </button>
 
-      <p className="mt-7 text-center text-[14px] text-white/75">
+      <p className="mt-7 text-center text-[14px] text-muted">
         {signup ? t("auth.haveAccount") : t("auth.noAccount")}{" "}
         <button
           type="button"
@@ -220,7 +220,7 @@ function SignIn() {
             setError(null);
             setInfo(null);
           }}
-          className="font-bold text-white underline-offset-4 hover:underline"
+          className="font-bold text-money underline-offset-4 hover:underline"
         >
           {signup ? t("auth.signInLink") : t("auth.signUpLink")}
         </button>
@@ -229,38 +229,41 @@ function SignIn() {
   );
 }
 
-/** Split layout: brand panel on the left, dark form panel on the right. */
+/** Split layout: blush brand panel, white form. */
 function Shell({ children, t }: { children: React.ReactNode; t: ReturnType<typeof useT> }) {
   return (
-    <div className="min-h-dvh bg-forest lg:grid lg:grid-cols-[1.05fr_1fr]">
-      <aside className="relative isolate hidden overflow-hidden bg-forest lg:block">
-        <Image
-          src="/images/landing/three-friends.jpg"
-          alt="Three young women laughing together, wrapped in colourful fabric"
-          fill
-          priority
-          sizes="50vw"
-          className="-z-20 object-cover object-[center_30%]"
-        />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-forest/95 via-forest/45 to-forest/10" aria-hidden />
-        <div className="relative flex h-full min-h-dvh flex-col justify-between px-14 py-12 xl:px-20">
+    <div className="min-h-dvh bg-paper lg:grid lg:grid-cols-[1.05fr_1fr]">
+      <aside className="relative hidden overflow-hidden bg-white lg:block">
+        <div className="kente-rail absolute inset-y-0 left-0 w-3" aria-hidden />
+        <div className="brand-blob -top-16 right-[-4rem] h-72 w-72" aria-hidden />
+        <div className="relative flex h-full min-h-dvh flex-col justify-between px-14 py-12 pl-16 xl:px-20 xl:pl-20">
           <div className="flex items-center gap-3">
             <Logo size={52} />
-            <span className="text-[26px] leading-none font-extrabold tracking-tight text-white">
+            <span className="text-[26px] leading-none font-extrabold tracking-tight text-forest">
               {t("app.name")}
-              <span className="mt-1 block text-[12px] font-semibold tracking-wide text-btc">{t("app.tagline")}</span>
+              <span className="mt-1 block text-[12px] font-semibold tracking-wide text-money">{t("app.tagline")}</span>
             </span>
           </div>
           <div>
-            <h2 className="max-w-lg text-[2.8rem] leading-[1.1] font-extrabold tracking-tight text-white">{t("auth.side.title")}</h2>
-            <p className="mt-5 max-w-md text-[17px] leading-relaxed text-white/85">{t("auth.side.body")}</p>
+            <h2 className="max-w-lg text-[2.8rem] leading-[1.05] font-extrabold text-forest">{t("auth.side.title")}</h2>
+            <p className="mt-5 max-w-md text-[17px] leading-relaxed text-muted">{t("auth.side.body")}</p>
+          </div>
+          <div className="relative mt-8 h-[min(42vh,22rem)] overflow-hidden rounded-[32px] shadow-[var(--shadow-card)]">
+            <Image
+              src="/images/landing/three-friends.jpg"
+              alt="Three young women laughing together, wrapped in colourful fabric"
+              fill
+              priority
+              sizes="46vw"
+              className="object-cover object-[center_30%]"
+            />
           </div>
         </div>
       </aside>
 
-      <main className="relative flex min-h-dvh flex-col bg-[#0b3326] px-6 py-6 sm:px-12 lg:rounded-l-[40px] lg:px-16">
+      <main className="relative flex min-h-dvh flex-col bg-white px-6 py-6 sm:px-12 lg:px-16">
         <header className="flex items-center justify-between">
-          <Link href="/welcome" className="inline-flex items-center gap-2 text-[14px] font-semibold text-white/85 hover:text-white">
+          <Link href="/welcome" className="inline-flex items-center gap-2 text-[14px] font-semibold text-forest hover:text-money">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M3 11l9-8 9 8" />
               <path d="M5 10v10h14V10" />

@@ -2,11 +2,11 @@
 
 import type { ReactNode } from "react";
 
-const LINE = "#0A3D2E";
-const GREEN = "#0F6B4C";
-const FOREST = "#0A3D2E";
-const GOLD = "#F5C518";
-const ORANGE = "#F7931A";
+const LINE = "#21212E";
+const GREEN = "#F74A9A";
+const FOREST = "#21212E";
+const GOLD = "#FE6F01";
+const ORANGE = "#FE6F01";
 const SKIN = "#C47A4A";
 const SKIN2 = "#D4956A";
 const SKIN3 = "#B86B3C";
@@ -17,13 +17,13 @@ export function LandingHeroPeople({ className = "" }: { className?: string }) {
     <svg viewBox="0 0 560 480" className={className} role="img" aria-label="Three women holding a shared savings basket with Lightning">
       <defs>
         <filter id="cardShadow" x="-30%" y="-30%" width="160%" height="160%">
-          <feDropShadow dx="0" dy="8" stdDeviation="10" floodColor="#0A3D2E" floodOpacity="0.14" />
+          <feDropShadow dx="0" dy="8" stdDeviation="10" floodColor="#21212E" floodOpacity="0.12" />
         </filter>
       </defs>
 
       {/* unity ring */}
-      <circle cx="280" cy="230" r="200" fill="none" stroke="#D5E0DA" strokeWidth="3" strokeDasharray="8 12" />
-      <circle cx="280" cy="230" r="168" fill="#F3F6F4" />
+      <circle cx="280" cy="230" r="200" fill="none" stroke="#F3D0E2" strokeWidth="3" strokeDasharray="8 12" />
+      <circle cx="280" cy="230" r="168" fill="#FFF7FB" />
 
       {/* LEFT woman — green dress, headwrap */}
       <g stroke={LINE} strokeWidth="3" strokeLinejoin="round">
@@ -116,7 +116,7 @@ function FeatureFrame({ children, bg }: { children: ReactNode; bg: string }) {
 
 export function FeatureIconLedger() {
   return (
-    <FeatureFrame bg="#E7F3EC">
+    <FeatureFrame bg="#FDE8F2">
       <rect x="28" y="24" width="32" height="42" rx="8" fill="#fff" stroke={LINE} strokeWidth="2.5" />
       <circle cx="44" cy="38" r="7" fill={SKIN} stroke={LINE} strokeWidth="2" />
       <path d="M34 52h20M34 60h14" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" />
@@ -128,7 +128,7 @@ export function FeatureIconLedger() {
 
 export function FeatureIconPayout() {
   return (
-    <FeatureFrame bg="#FFF4E0">
+    <FeatureFrame bg="#FFF1E4">
       <circle cx="44" cy="34" r="11" fill={SKIN2} stroke={LINE} strokeWidth="2.5" />
       <path d="M30 52 Q44 44 58 52 L56 70 Q44 76 32 70 Z" fill={GREEN} stroke={LINE} strokeWidth="2.5" />
       <path d="M44 48v20M36 60l8 10 8-10" stroke={GOLD} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
@@ -138,7 +138,7 @@ export function FeatureIconPayout() {
 
 export function FeatureIconLightning() {
   return (
-    <FeatureFrame bg="#E7F3EC">
+    <FeatureFrame bg="#FDE8F2">
       <circle cx="32" cy="36" r="9" fill={SKIN} stroke={LINE} strokeWidth="2" />
       <circle cx="56" cy="36" r="9" fill={SKIN2} stroke={LINE} strokeWidth="2" />
       <path d="M22 48 Q32 42 42 48" fill={GREEN} stroke={LINE} strokeWidth="2" />
@@ -151,7 +151,7 @@ export function FeatureIconLightning() {
 
 export function FeatureIconAbroad() {
   return (
-    <FeatureFrame bg="#E7F3EC">
+    <FeatureFrame bg="#FDE8F2">
       <circle cx="44" cy="44" r="22" fill="#fff" stroke={LINE} strokeWidth="2.5" />
       <ellipse cx="44" cy="44" rx="9" ry="22" fill="none" stroke={GREEN} strokeWidth="2" />
       <path d="M22 44h44M26 34h36M26 54h36" stroke={GREEN} strokeWidth="2" strokeLinecap="round" />

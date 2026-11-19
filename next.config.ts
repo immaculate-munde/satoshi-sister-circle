@@ -8,8 +8,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Postgres-free MVP: node:sqlite is a Node builtin and must never be bundled for the browser.
-  serverExternalPackages: ["graphql-ws"],
+  // Keep the database drivers outside the bundler. PGlite resolves its WASM files with file URLs.
+  serverExternalPackages: ["graphql-ws", "pg", "@electric-sql/pglite"],
   poweredByHeader: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

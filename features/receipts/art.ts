@@ -8,10 +8,10 @@ export type Prim =
   | { kind: "path"; d: string; stroke?: string; fill?: string; width?: number }
   | { kind: "circle"; cx: number; cy: number; r: number; stroke?: string; fill?: string; width?: number };
 
-export const CREAM = "#F3E7CF";
-export const BTC_ORANGE = "#F7931A";
-export const DEEP_FOREST = "#0A3D2E";
-export const MONEY_GREEN = "#0F6B4C";
+export const CREAM = "#FDE8F2";
+export const BTC_ORANGE = "#FE6F01";
+export const DEEP_FOREST = "#21212E";
+export const MONEY_GREEN = "#F74A9A";
 
 /** viewBox 0 0 240 150 */
 export const RECEIPT_ART: Prim[] = [
@@ -49,8 +49,8 @@ export const RECEIPT_ART: Prim[] = [
 /** viewBox 0 0 120 80: a wing lifting a Lightning coin. */
 export const LOGO_ART: Prim[] = [
   { kind: "path", d: "M50 46 Q34 18 6 14 Q18 22 20 30 Q8 28 2 32 Q16 36 22 42 Q10 44 6 50 Q24 52 36 54 Q46 54 50 46 Z", fill: MONEY_GREEN, stroke: MONEY_GREEN, width: 1 },
-  { kind: "path", d: "M44 46 Q32 30 16 24", stroke: "#E7F3EC", width: 1.6 },
-  { kind: "path", d: "M42 50 Q28 42 14 40", stroke: "#E7F3EC", width: 1.6 },
+  { kind: "path", d: "M44 46 Q32 30 16 24", stroke: "#FDE8F2", width: 1.6 },
+  { kind: "path", d: "M42 50 Q28 42 14 40", stroke: "#FDE8F2", width: 1.6 },
   { kind: "circle", cx: 76, cy: 40, r: 28, fill: BTC_ORANGE, stroke: BTC_ORANGE, width: 1 },
   { kind: "circle", cx: 76, cy: 40, r: 22, stroke: "#FFFFFF", width: 2 },
   { kind: "path", d: "M80 22 L66 44 L76 44 L72 58 L88 36 L78 36 Z", fill: "#FFFFFF", stroke: "#FFFFFF", width: 1 },

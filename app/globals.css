@@ -1,29 +1,31 @@
 @import "tailwindcss";
 
-/* Tokens from the brief's visual system + soft marketing surface. */
+/* Key-ching brand: navy ink, hot pink, orange, blush. Sampled from the deck. */
 @theme {
   --color-white: #ffffff;
-  --color-paper: #f7faf8;
-  --color-sage: #e7f3ec;
-  --color-money: #0f6b4c;
-  --color-forest: #0a3d2e;
-  --color-btc: #f7931a;
-  --color-warm: #ff9f1c;
-  --color-ink: #14201b;
-  --color-muted: #5c6b64;
-  --color-cream: #f3e7cf;
-  --color-line: #dfe8e3;
-  --color-danger: #b42318;
-  --color-danger-wash: #fdecea;
-  --color-warn-wash: #fff4e0;
+  --color-paper: #fff7fb;
+  --color-sage: #fde8f2;
+  --color-pink: #f74a9a;
+  --color-money: #c81e78;
+  --color-money-deep: #9e145f;
+  --color-forest: #21212e;
+  --color-btc: #fe6f01;
+  --color-warm: #ff8a2a;
+  --color-ink: #21212e;
+  --color-muted: #6d6573;
+  --color-cream: #fde8f2;
+  --color-line: #f0d5e3;
+  --color-danger: #c4234a;
+  --color-danger-wash: #fde8ee;
+  --color-warn-wash: #fff1e4;
 
-  --font-display: var(--font-lobster), "Brush Script MT", cursive;
+  --font-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
-  --radius-card: 22px;
+  --radius-card: 24px;
   --radius-pill: 999px;
-  --shadow-card: 0 12px 32px rgb(10 61 46 / 0.08), 0 2px 6px rgb(10 61 46 / 0.04);
-  --shadow-soft: 0 18px 48px rgb(10 61 46 / 0.1);
+  --shadow-card: 0 16px 40px rgb(33 33 46 / 0.06), 0 2px 8px rgb(247 74 154 / 0.08);
+  --shadow-soft: 0 28px 60px rgb(33 33 46 / 0.12);
 }
 
 html {
@@ -38,9 +40,15 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-btc);
+  outline: 3px solid var(--color-money);
   outline-offset: 2px;
   border-radius: 6px;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.035em;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -68,7 +76,7 @@ body {
   animation: fade-up 0.5s ease-out both;
 }
 
-/* Shared marketing + app chrome (Jadoo structure, Chama brand). */
+/* Shared marketing + app chrome. */
 .brand-shell {
   width: min(100% - 2rem, 72rem);
   margin-inline: auto;
@@ -78,10 +86,10 @@ body {
   color: var(--color-ink);
 }
 .brand-kicker {
-  color: var(--color-btc);
-  font-size: 0.95rem;
+  color: var(--color-money);
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 .brand-btn {
@@ -102,10 +110,10 @@ body {
 .brand-btn-primary {
   background: var(--color-money);
   color: #fff;
-  box-shadow: 0 10px 24px rgb(15 107 76 / 0.28);
+  box-shadow: 0 12px 28px rgb(200 30 120 / 0.28);
 }
 .brand-btn-primary:hover {
-  background: var(--color-forest);
+  background: var(--color-money-deep);
 }
 .brand-btn-ghost {
   background: transparent;
@@ -115,11 +123,12 @@ body {
   background: var(--color-sage);
 }
 .brand-btn-outline {
-  border: 1.5px solid var(--color-money);
+  border: 1.5px solid var(--color-line);
   background: #fff;
-  color: var(--color-money);
+  color: var(--color-forest);
 }
 .brand-btn-outline:hover {
+  border-color: var(--color-money);
   background: var(--color-sage);
 }
 .brand-soft-card {
@@ -127,14 +136,32 @@ body {
   background: #fff;
   box-shadow: var(--shadow-card);
 }
+.kente-rail {
+  background-image: url("/brand/kente.svg");
+  background-repeat: repeat-y;
+  background-size: 20px 80px;
+}
+.kente-rule {
+  height: 14px;
+  background-image: url("/brand/kente.svg");
+  background-repeat: repeat-x;
+  background-size: 20px 80px;
+  background-position: left top;
+}
+.brand-blob {
+  position: absolute;
+  border-radius: 999px;
+  background: radial-gradient(circle at 40% 40%, rgb(247 74 154 / 0.45), rgb(253 232 242 / 0.2) 70%);
+  filter: blur(2px);
+}
 .brand-hero-blob {
   position: absolute;
   inset: 8% 4% 12% 18%;
   border-radius: 46% 54% 42% 58% / 48% 42% 58% 52%;
   background:
-    radial-gradient(circle at 30% 30%, rgb(247 147 26 / 0.35), transparent 55%),
-    radial-gradient(circle at 70% 60%, rgb(15 107 76 / 0.2), transparent 50%),
-    #ffe7b8;
+    radial-gradient(circle at 30% 30%, rgb(254 111 1 / 0.28), transparent 55%),
+    radial-gradient(circle at 70% 60%, rgb(247 74 154 / 0.28), transparent 52%),
+    #fde8f2;
   filter: blur(0.5px);
 }
 .brand-hero-art {

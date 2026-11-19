@@ -23,14 +23,18 @@ export default function HomePage() {
   const diasporaTarget = active[0]?.id;
 
   const totalCard = (
-    <div className="rounded-[var(--radius-card)] bg-forest p-5 text-white shadow-[var(--shadow-card)]">
-      <p className="text-[13px] font-medium text-cream/80">{t("home.totalSaved")}</p>
-      <p className="mt-1 text-[32px] leading-none font-extrabold">{kes(totals.kesMinorAtContribution)}</p>
-      <p className="mt-2 text-[13px] text-cream/80">
-        {units(totals.btcSats, "BTC_SAT")}
-        {totals.usdCents !== "0" ? ` · ${units(totals.usdCents, "USD_CENT")}` : ""}
-      </p>
-      <p className="mt-3 text-[12px] text-btc">{t("home.totalSavedHint")} →</p>
+    <div className="relative overflow-hidden rounded-[28px] bg-forest p-5 text-white shadow-[var(--shadow-card)]">
+      <div className="absolute -top-8 -right-6 h-28 w-28 rounded-full bg-pink/35" aria-hidden />
+      <div className="absolute -bottom-10 left-10 h-24 w-24 rounded-full bg-btc/25" aria-hidden />
+      <div className="relative">
+        <p className="text-[13px] font-medium text-cream/80">{t("home.totalSaved")}</p>
+        <p className="mt-1 text-[32px] leading-none font-extrabold">{kes(totals.kesMinorAtContribution)}</p>
+        <p className="mt-2 text-[13px] text-cream/80">
+          {units(totals.btcSats, "BTC_SAT")}
+          {totals.usdCents !== "0" ? ` · ${units(totals.usdCents, "USD_CENT")}` : ""}
+        </p>
+        <p className="mt-3 text-[12px] font-semibold text-pink">{t("home.totalSavedHint")} →</p>
+      </div>
     </div>
   );
 
@@ -38,7 +42,7 @@ export default function HomePage() {
     <Screen className="pt-4">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[24px] font-extrabold tracking-tight">{t("home.greeting", { name: name.split(" ")[0] })}</h1>
+          <h1 className="truncate text-[28px] font-extrabold">{t("home.greeting", { name: name.split(" ")[0] })}</h1>
           <p className="text-[14px] text-muted">{active.length === 1 ? t("home.active1") : t("home.active", { n: active.length })}</p>
         </div>
         <Link href="/account" className="flex h-11 w-11 items-center justify-center rounded-full" aria-label={t("nav.account")}>
@@ -58,7 +62,7 @@ export default function HomePage() {
 
       <div className="mt-6 mb-3 flex items-center justify-between">
         <h2 className="text-[17px] font-bold">{t("home.myChamas")}</h2>
-        <Link href="/chamas/new" className="inline-flex min-h-11 items-center gap-1 rounded-full bg-sage px-4 text-sm font-semibold text-money">
+        <Link href="/chamas/new" className="inline-flex min-h-11 items-center gap-1 rounded-full bg-money px-4 text-sm font-semibold text-white">
           <span aria-hidden>+</span> {t("home.create")}
         </Link>
       </div>

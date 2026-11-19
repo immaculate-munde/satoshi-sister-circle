@@ -49,7 +49,7 @@ export function RosterEditor({
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2 pl-8">
               <label className="flex min-h-11 items-center gap-2 text-sm">
-                <input type="radio" name="me" checked={m.isMe} onChange={() => onChange(roster.map((x, j) => ({ ...x, isMe: j === i })))} className="h-5 w-5 accent-[#0F6B4C]" />
+                <input type="radio" name="me" checked={m.isMe} onChange={() => onChange(roster.map((x, j) => ({ ...x, isMe: j === i })))} className="h-5 w-5 accent-money" />
                 {t("roster.me")}
               </label>
               <label className="flex min-h-11 items-center gap-1 text-sm">
