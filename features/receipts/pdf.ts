@@ -51,10 +51,10 @@ function fitText(text: string, font: PDFFont, size: number, max: number) {
 /** Branded scalloped ticket, rendered server-side from the immutable receipt snapshot. */
 export async function renderReceiptPdf(s: ReceiptSnapshot, contentHash: string): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  doc.setTitle(`${s.receiptNumber} - Chama on Lightning receipt`);
-  doc.setAuthor("Chama on Lightning");
+  doc.setTitle(`${s.receiptNumber} - Key-ching receipt`);
+  doc.setAuthor("Key-ching");
   doc.setSubject(`${s.kind} receipt`);
-  doc.setCreator("Chama on Lightning");
+  doc.setCreator("Key-ching");
   const W = 360;
   const H = 700;
   const page = doc.addPage([W, H]);

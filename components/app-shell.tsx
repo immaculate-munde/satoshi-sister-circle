@@ -60,11 +60,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-h-0 flex-1">
         <aside className="no-print hidden w-60 shrink-0 border-r border-line/80 bg-white md:block lg:w-64">
           <div className="sticky top-0 flex h-dvh max-h-[calc(100dvh-1.75rem)] flex-col px-3 py-6">
-          <Link href="/home" className="mb-8 flex items-center gap-2.5 px-2" aria-label={`${t("app.name")} ${t("app.on")}`}>
+          <Link href="/home" className="mb-8 flex items-center gap-2.5 px-2" aria-label={`${t("app.name")}: ${t("app.tagline")}`}>
             <Logo size={36} />
             <span className="min-w-0">
               <span className="block truncate text-[15px] font-extrabold leading-tight text-forest">{t("app.name")}</span>
-              <span className="block truncate text-[12px] font-semibold text-btc">{t("app.on")}</span>
+              <span className="block truncate text-[12px] font-semibold text-btc">{t("app.tagline")}</span>
             </span>
           </Link>
           <nav aria-label={t("nav.primary")} className="flex flex-1 flex-col gap-1.5">

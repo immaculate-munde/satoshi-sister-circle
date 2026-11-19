@@ -1,7 +1,6 @@
 export const en = {
-  "app.name": "Chama",
-  "app.on": "on Lightning",
-  "app.tagline": "Save together. Paid out on time.",
+  "app.name": "Key-ching",
+  "app.tagline": "Your chama on Lightning",
   "mode.demo": "Demo mode · simulated payments · no real money",
   "mode.flash": "Flash test network · test funds only",
   "offline": "You're offline. Showing the last loaded data, read-only. Payments need a connection.",
@@ -80,7 +79,7 @@ export const en = {
   "landing.features.kicker": "CATEGORY",
   "landing.features.title": "We offer what your circle needs",
   "landing.quote":
-    "Funds sit with a custodial Lightning provider while a round fills. Chama on Lightning automates the payout you all agreed to, but it is not self-custody. Start with amounts you are comfortable with.",
+    "Funds sit with a custodial Lightning provider while a round fills. Key-ching automates the payout you all agreed to, but it is not self-custody. Start with amounts you are comfortable with.",
   "landing.quote.by": "Be clear about custody",
   "landing.preview.round": "This round",
   "landing.preview.paid": "{paid} of {total} paid",
@@ -104,7 +103,7 @@ export const en = {
   "landing.how.3.body": "Once everyone has paid, the agreed member receives the pot. Receipts keep the trail clear.",
   "landing.banner.title": "Ready to start your chama?",
   "landing.banner.body": "Start a circle with your sisters, or join one that already has a seat waiting for you.",
-  "landing.footer.rights": "Chama on Lightning",
+  "landing.footer.rights": "Key-ching",
   "signin.title": "Who's saving today?",
   "signin.demoHint": "Demo personas: switch between members to play each person's part.",
   "signin.newName": "Or join as someone new",

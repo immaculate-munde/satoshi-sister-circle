@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { LandingHeroArt, Logo } from "@/components/art";
+import { Logo } from "@/components/art";
 import { useT } from "@/components/providers";
 import { apiFetch } from "@/lib/client/api";
 import { establishAppSession, safeNext, supabase, supabaseEnabled } from "@/lib/client/supabase";
@@ -232,19 +233,28 @@ function SignIn() {
 function Shell({ children, t }: { children: React.ReactNode; t: ReturnType<typeof useT> }) {
   return (
     <div className="min-h-dvh bg-forest lg:grid lg:grid-cols-[1.05fr_1fr]">
-      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-money via-forest to-[#06271d] lg:block">
-        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-btc/15" aria-hidden />
-        <div className="absolute -right-20 bottom-10 h-80 w-80 rounded-full bg-sage/10" aria-hidden />
-        <div className="relative flex h-full min-h-dvh flex-col justify-center px-14 py-16 xl:px-20">
+      <aside className="relative isolate hidden overflow-hidden bg-forest lg:block">
+        <Image
+          src="/images/landing/three-friends.jpg"
+          alt="Three young women laughing together, wrapped in colourful fabric"
+          fill
+          priority
+          sizes="50vw"
+          className="-z-20 object-cover object-[center_30%]"
+        />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-forest/95 via-forest/45 to-forest/10" aria-hidden />
+        <div className="relative flex h-full min-h-dvh flex-col justify-between px-14 py-12 xl:px-20">
           <div className="flex items-center gap-3">
             <Logo size={52} />
-            <span className="text-[26px] font-extrabold tracking-tight text-white">
-              {t("app.name")} <span className="font-semibold text-btc">{t("app.on")}</span>
+            <span className="text-[26px] leading-none font-extrabold tracking-tight text-white">
+              {t("app.name")}
+              <span className="mt-1 block text-[12px] font-semibold tracking-wide text-btc">{t("app.tagline")}</span>
             </span>
           </div>
-          <h2 className="mt-14 max-w-lg text-[2.8rem] leading-[1.1] font-extrabold tracking-tight text-white">{t("auth.side.title")}</h2>
-          <p className="mt-5 max-w-md text-[17px] leading-relaxed text-white/80">{t("auth.side.body")}</p>
-          <LandingHeroArt className="mt-10 w-full max-w-[22rem] opacity-95" />
+          <div>
+            <h2 className="max-w-lg text-[2.8rem] leading-[1.1] font-extrabold tracking-tight text-white">{t("auth.side.title")}</h2>
+            <p className="mt-5 max-w-md text-[17px] leading-relaxed text-white/85">{t("auth.side.body")}</p>
+          </div>
         </div>
       </aside>
 
