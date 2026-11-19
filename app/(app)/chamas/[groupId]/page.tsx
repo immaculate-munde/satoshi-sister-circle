@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/components/providers";
 import { Card, ErrorState, Header, Loading, Notice, PillButton, PillLink, ProgressPot, Screen, StickyActions } from "@/components/ui";
+import { JoinRequestsPanel } from "@/features/chamas/join-requests";
 import { ActivityLog, describeEvent, LedgerRow, RotationList } from "@/features/chamas/ledger-parts";
 import { apiFetch, useApi, useLedgerEvents, useOnline } from "@/lib/client/api";
 import { eat, frequencyLabel, kes, units } from "@/lib/client/format";
@@ -150,6 +151,8 @@ export default function LedgerPage() {
             </Card>
           </section>
         ) : null}
+
+        {isOwner ? <JoinRequestsPanel groupId={groupId} /> : null}
 
         {d.history.length ? (
           <section aria-labelledby="hist-h">

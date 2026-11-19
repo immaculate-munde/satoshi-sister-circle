@@ -7,5 +7,8 @@ export default defineConfig({
     environment: "node",
     include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
     pool: "forks",
+    // Each integration test boots a fresh in-process Postgres (PGlite) and applies every migration.
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
   },
 });

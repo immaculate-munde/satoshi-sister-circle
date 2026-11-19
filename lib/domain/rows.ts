@@ -19,6 +19,8 @@ export interface GroupRow {
   rules_locked_at: string | null;
   provider: string;
   provider_account_ref: string;
+  visibility: "PRIVATE" | "PUBLIC";
+  description: string | null;
   created_at: string;
 }
 

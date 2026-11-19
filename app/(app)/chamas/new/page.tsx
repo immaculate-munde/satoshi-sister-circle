@@ -31,6 +31,8 @@ export default function CreateChamaPage() {
   const [chosenAsset, setAsset] = useState<Asset>("BTC_SAT");
   const asset: Asset = btcEnabled ? chosenAsset : "USD_CENT";
   const [firstDue, setFirstDue] = useState(defaultFirstDue);
+  const [isPublic, setIsPublic] = useState(false);
+  const [goal, setGoal] = useState("");
   const [roster, setRoster] = useState<RosterMember[] | null>(null);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -74,6 +76,8 @@ export default function CreateChamaPage() {
           customIntervalDays: frequency === "CUSTOM" ? Number(customDays) : undefined,
           settlementAsset: asset,
           firstDueDate: firstDue,
+          visibility: isPublic ? "PUBLIC" : "PRIVATE",
+          description: goal.trim() || undefined,
           members: members.map((m) => ({
             displayName: m.displayName,
             isMe: m.isMe,
@@ -167,6 +171,20 @@ export default function CreateChamaPage() {
             {assetBtn("USD_CENT", t("create.usd"), t("create.usdHint"), "$")}
           </div>
         </fieldset>
+        <Card className="space-y-3">
+          <label className="flex min-h-11 cursor-pointer items-start gap-3">
+            <input type="checkbox" className="mt-1 h-5 w-5 accent-[var(--color-money)]" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
+            <span>
+              <span className="block text-sm font-semibold">{t("create.public")}</span>
+              <span className="block text-xs text-muted">{t("create.publicHint")}</span>
+            </span>
+          </label>
+          {isPublic ? (
+            <Field label={t("create.goal")} htmlFor="goal">
+              <textarea id="goal" rows={3} maxLength={500} className={`${inputClass} py-3`} value={goal} onChange={(e) => setGoal(e.target.value)} placeholder={t("create.goalPh")} />
+            </Field>
+          ) : null}
+        </Card>
         <Card>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold">{t("create.order")}</h2>

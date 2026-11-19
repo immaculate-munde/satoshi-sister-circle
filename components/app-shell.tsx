@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
 import { Logo } from "@/components/art";
-import { IconAccount, IconHome, IconPlus, IconWallet } from "@/components/nav-icons";
+import { IconAccount, IconHome, IconPlus, IconSearch, IconWallet } from "@/components/nav-icons";
 import { useT } from "@/components/providers";
 import { ModeBanner } from "@/components/ui";
 
@@ -21,6 +21,7 @@ const NAV = [
     Icon: IconWallet,
     match: (p: string) => p === "/wallet" || p.startsWith("/wallet/"),
   },
+  { href: "/discover", labelKey: "nav.discover" as const, Icon: IconSearch, match: (p: string) => p === "/discover" },
   { href: "/chamas/new", labelKey: "nav.create" as const, Icon: IconPlus, match: (p: string) => p === "/chamas/new" },
   { href: "/account", labelKey: "nav.account" as const, Icon: IconAccount, match: (p: string) => p === "/account" },
 ];
@@ -100,7 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         aria-label={t("nav.primary")}
         className="no-print safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 backdrop-blur md:hidden"
       >
-        <ul className="mx-auto grid max-w-2xl grid-cols-4">
+        <ul className="mx-auto grid max-w-2xl grid-cols-5">
           {NAV.map(({ href, labelKey, Icon }) => {
             const active = current === href;
             return (
