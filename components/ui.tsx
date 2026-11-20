@@ -110,14 +110,13 @@ export function ProgressPot({ paid, total, label, onDark }: { paid: number; tota
 
 export function ModeBanner() {
   const { mode, t } = useApp();
+  if (mode.provider === "demo") return null;
   return (
     <div
       role="note"
-      className={`no-print w-full px-4 py-1.5 text-center text-[11px] font-semibold tracking-wide ${
-        mode.provider === "demo" ? "bg-btc text-forest" : "bg-forest text-cream"
-      }`}
+      className="no-print w-full bg-forest px-4 py-1.5 text-center text-[11px] font-semibold tracking-wide text-cream"
     >
-      {mode.provider === "demo" ? t("mode.demo") : t("mode.flash")}
+      {t("mode.flash")}
     </div>
   );
 }
