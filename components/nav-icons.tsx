@@ -47,6 +47,16 @@ export function IconWallet({ className = "" }: { className?: string }) {
   );
 }
 
+export function IconSense({ className = "" }: { className?: string }) {
+  return (
+    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="8" r="3" />
+      <path d="M6 20c1.2-3 3.2-4.5 6-4.5S16.8 17 18 20" />
+      <path d="M17 5.5c1.4.6 2.4 1.8 2.4 3.2" />
+    </svg>
+  );
+}
+
 export function IconSearch({ className = "" }: { className?: string }) {
   return (
     <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

@@ -60,6 +60,12 @@ export default function HomePage() {
         )}
       </div>
 
+      <Link href="/sense" className="mt-4 block rounded-[24px] border border-line bg-white p-4 shadow-[var(--shadow-card)]">
+        <p className="text-[15px] font-bold text-forest">{t("sense.homeTitle")}</p>
+        <p className="mt-1 text-[13px] leading-5 text-muted">{t("sense.homeBody")}</p>
+        <p className="mt-2 text-[13px] font-semibold text-money">{t("sense.open")} →</p>
+      </Link>
+
       <div className="mt-6 mb-3 flex items-center justify-between">
         <h2 className="text-[17px] font-bold">{t("home.myChamas")}</h2>
         <Link href="/chamas/new" className="inline-flex min-h-11 items-center gap-1 rounded-full bg-money px-4 text-sm font-semibold text-white">

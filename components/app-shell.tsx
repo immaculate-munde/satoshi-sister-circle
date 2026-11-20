@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
 import { Logo } from "@/components/art";
-import { IconAccount, IconHome, IconPlus, IconSearch, IconWallet } from "@/components/nav-icons";
+import { IconAccount, IconHome, IconPlus, IconSearch, IconSense, IconWallet } from "@/components/nav-icons";
 import { useT } from "@/components/providers";
 import { ModeBanner } from "@/components/ui";
 
@@ -20,6 +20,12 @@ const NAV = [
     labelKey: "nav.wallet" as const,
     Icon: IconWallet,
     match: (p: string) => p === "/wallet" || p.startsWith("/wallet/"),
+  },
+  {
+    href: "/sense",
+    labelKey: "nav.sense" as const,
+    Icon: IconSense,
+    match: (p: string) => p === "/sense" || p.startsWith("/sense/"),
   },
   { href: "/discover", labelKey: "nav.discover" as const, Icon: IconSearch, match: (p: string) => p === "/discover" },
   { href: "/chamas/new", labelKey: "nav.create" as const, Icon: IconPlus, match: (p: string) => p === "/chamas/new" },
@@ -102,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         aria-label={t("nav.primary")}
         className="no-print safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 shadow-[0_-8px_24px_rgb(33_33_46_/_0.04)] backdrop-blur md:hidden"
       >
-        <ul className="mx-auto grid max-w-2xl grid-cols-5">
+        <ul className="mx-auto grid max-w-2xl grid-cols-6">
           {NAV.map(({ href, labelKey, Icon }) => {
             const active = current === href;
             return (

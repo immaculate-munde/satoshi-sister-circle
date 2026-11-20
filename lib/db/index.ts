@@ -87,8 +87,8 @@ function openPg(url: string): Db {
   };
 }
 
-function openPglite(): Db {
-  const lite = new PGlite(undefined, { parsers: { 20: (v: string) => Number(v) } });
+function openPglite(dataDir?: string): Db {
+  const lite = new PGlite(dataDir, { parsers: { 20: (v: string) => Number(v) } });
   const base = toExecutor(lite as unknown as Queryable);
   return {
     kind: "pglite",
@@ -113,14 +113,24 @@ function openPglite(): Db {
   };
 }
 
-/** `memory:` (tests, in-process PGlite) or a postgres:// / postgresql:// URL (Supabase). */
+/** `memory:` for a throwaway PGlite, `file:` for a PGlite directory on disk, or postgres:// for Supabase. */
 export async function openDb(url: string): Promise<Db> {
   const isPg = /^postgres(ql)?:\/\//.test(url);
   const isMem = url === "memory:" || url === ":memory:";
-  if (!isPg && !isMem) throw new Error("DATABASE_URL must be a postgres:// connection string (e.g. your Supabase URI)");
-  const db = isPg ? openPg(url) : openPglite();
+  const isFile = url.startsWith("file:");
+  if (!isPg && !isMem && !isFile) {
+    throw new Error("DATABASE_URL must be a postgres:// connection string, a file: path, or memory:");
+  }
+  const db = isPg ? openPg(url) : openPglite(isFile ? fileDataDir(url) : undefined);
   await migrate(db);
   return db;
+}
+
+function fileDataDir(url: string): string {
+  const rel = url.replace(/^file:\/\//, "").replace(/^file:/, "");
+  const dir = path.resolve(rel);
+  fs.mkdirSync(path.dirname(dir), { recursive: true });
+  return dir;
 }
 
 export async function migrate(db: Db): Promise<string[]> {
